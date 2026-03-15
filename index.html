@@ -1,0 +1,1969 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Daily Mission</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2e9e4f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Daily Mission">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+  :root {
+    --bg: #f5f7f5;
+    --surface: #ffffff;
+    --surface2: #edf5ee;
+    --accent: #2e9e4f;
+    --accent2: #f97316;
+    --gold: #d4a017;
+    --green: #2e9e4f;
+    --text: #1a2e1e;
+    --text2: #6b8c70;
+    --border: rgba(46,158,79,0.2);
+    --glow: rgba(46,158,79,0.35);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(46,158,79,0.07) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(46,158,79,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; min-height: 100vh; }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; flex-direction: column; min-height: 100vh; padding: 0; }
+  .screen.active { display: flex; }
+
+  /* ===== HOME SCREEN ===== */
+  #home-screen { padding: 24px 20px; }
+
+  .logo-area { text-align: center; padding: 32px 0 24px; }
+  .logo-text { font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 30px; letter-spacing: -1px; }
+  .logo-text span { color: var(--accent); }
+  .logo-sub { font-size: 11px; color: var(--text2); letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
+
+  .streak-banner {
+    background: linear-gradient(135deg, rgba(46,158,79,0.1), rgba(212,160,23,0.08));
+    border: 1px solid rgba(212,160,23,0.4);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .streak-banner::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(212,160,23,0.06), transparent);
+    animation: shimmer 3s infinite;
+  }
+  @keyframes shimmer { 0%,100% { transform: translateX(-100%); } 50% { transform: translateX(100%); } }
+  .streak-icon { font-size: 32px; }
+  .streak-info { flex: 1; }
+  .streak-days { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: var(--gold); }
+  .streak-label { font-size: 12px; color: var(--text2); }
+
+  .daily-progress-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .card-title { font-size: 14px; color: var(--text2); font-weight: 500; }
+  .card-badge {
+    font-size: 11px;
+    background: rgba(46,158,79,0.12);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+  }
+
+  .xp-bar-wrap { position: relative; height: 8px; background: rgba(46,158,79,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+  .xp-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), #5abf6e); transition: width 0.6s cubic-bezier(0.34,1.56,0.64,1); position: relative; }
+  .xp-bar::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: barShine 2s infinite; }
+  @keyframes barShine { 0%,100% { transform: translateX(-100%); } 60% { transform: translateX(100%); } }
+
+  .xp-labels { display: flex; justify-content: space-between; font-size: 12px; }
+  .xp-current { color: var(--text); font-weight: 700; }
+  .xp-target { color: var(--text2); }
+
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+  .stat-item { text-align: center; }
+  .stat-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; }
+  .stat-num.green { color: var(--green); }
+  .stat-num.purple { color: var(--accent); }
+  .stat-num.red { color: var(--accent2); }
+  .stat-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
+
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    text-align: left;
+  }
+  .mode-card:active { transform: scale(0.96); }
+  .mode-card:hover { border-color: var(--accent); background: var(--surface2); }
+  .mode-card.highlight {
+    background: linear-gradient(135deg, rgba(46,158,79,0.12), rgba(212,160,23,0.08));
+    border-color: rgba(46,158,79,0.5);
+  }
+  .mode-card.highlight::before {
+    content: 'おすすめ';
+    position: absolute;
+    top: 8px; right: 8px;
+    font-size: 9px;
+    background: var(--accent);
+    color: white;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-weight: 700;
+  }
+  .mode-icon { font-size: 28px; margin-bottom: 10px; }
+  .mode-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .mode-desc { font-size: 11px; color: var(--text2); line-height: 1.4; }
+  .mode-count { font-size: 11px; color: var(--accent); margin-top: 6px; font-weight: 600; }
+
+  .review-due-card {
+    background: linear-gradient(135deg, rgba(0,229,160,0.1), rgba(0,229,160,0.05));
+    border: 1px solid rgba(0,229,160,0.3);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .review-due-card:active { transform: scale(0.98); }
+  .review-due-left { display: flex; align-items: center; gap: 12px; }
+  .review-due-icon { font-size: 24px; }
+  .review-due-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: var(--green); }
+  .review-due-label { font-size: 12px; color: var(--text2); }
+  .review-due-btn { background: var(--green); color: var(--bg); font-size: 12px; font-weight: 700; padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; }
+
+  /* ===== QUIZ SCREEN ===== */
+  #quiz-screen { flex-direction: column; }
+
+  .quiz-header {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .back-btn { background: none; border: none; color: var(--text2); font-size: 22px; cursor: pointer; padding: 4px; }
+  .quiz-progress-wrap { flex: 1; }
+  .quiz-progress-bar { height: 4px; background: rgba(46,158,79,0.12); border-radius: 2px; overflow: hidden; }
+  .quiz-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #5abf6e); border-radius: 2px; transition: width 0.3s; }
+  .quiz-count { font-size: 12px; color: var(--text2); text-align: right; margin-top: 4px; }
+  .quiz-xp { font-size: 13px; color: var(--gold); font-weight: 700; }
+
+  .quiz-body { flex: 1; padding: 8px 20px 20px; display: flex; flex-direction: column; }
+
+  .difficulty-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .diff-new { background: rgba(46,158,79,0.12); color: var(--accent); }
+  .diff-learning { background: rgba(255,165,0,0.2); color: #ffa500; }
+  .diff-review { background: rgba(0,229,160,0.2); color: var(--green); }
+  .diff-mastered { background: rgba(255,215,0,0.2); color: var(--gold); }
+
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 28px 24px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .quiz-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent), #5abf6e);
+  }
+
+  .quiz-type-label { font-size: 11px; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .quiz-question { font-size: 17px; line-height: 1.6; font-weight: 500; }
+  .quiz-question .blank {
+    display: inline-block;
+    min-width: 120px;
+    height: 2px;
+    background: var(--accent);
+    vertical-align: middle;
+    margin: 0 4px;
+    border-radius: 1px;
+    position: relative;
+  }
+  .quiz-question .blank::after {
+    content: '？';
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    color: var(--accent);
+  }
+  .quiz-hint { font-size: 12px; color: var(--text2); margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(46,158,79,0.15); }
+  .quiz-hint span { color: var(--text); }
+
+  /* ===== SPEECH / AUDIO ===== */
+  .speak-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(46,158,79,0.1);
+    border: 1px solid rgba(46,158,79,0.25);
+    border-radius: 20px;
+    padding: 5px 12px;
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-top: 10px;
+  }
+  .speak-btn:active { transform: scale(0.95); background: rgba(46,158,79,0.2); }
+  .speak-btn.speaking { background: rgba(46,158,79,0.2); border-color: var(--accent); }
+  .speak-btn svg { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+
+  .audio-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .toggle-switch {
+    width: 40px; height: 22px;
+    background: rgba(46,158,79,0.2);
+    border-radius: 11px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+    border: 1px solid rgba(46,158,79,0.3);
+  }
+  .toggle-switch.on { background: var(--accent); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  .toggle-switch.on::after { left: 20px; }
+
+  .options-grid { display: grid; gap: 10px; }
+  .option-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 18px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    line-height: 1.4;
+    position: relative;
+    overflow: hidden;
+  }
+  .option-btn:active { transform: scale(0.98); }
+  .option-btn.selected { border-color: var(--accent); background: rgba(46,158,79,0.1); }
+  .option-btn.correct {
+    border-color: var(--green);
+    background: rgba(0,229,160,0.12);
+    color: var(--green);
+    animation: correctPop 0.3s ease;
+  }
+  .option-btn.wrong {
+    border-color: var(--accent2);
+    background: rgba(252,92,125,0.1);
+    color: var(--accent2);
+    animation: wrongShake 0.3s ease;
+  }
+  @keyframes correctPop { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+  @keyframes wrongShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+  .option-letter {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(46,158,79,0.1);
+    text-align: center;
+    line-height: 22px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  .feedback-panel {
+    background: var(--surface2);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    display: none;
+    animation: slideUp 0.3s ease;
+  }
+  .feedback-panel.show { display: block; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .feedback-correct { color: var(--green); font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+  .feedback-wrong { color: var(--accent2); font-weight: 700; font-size: 15px; margin-bottom: 6px; }
+  .feedback-answer { font-size: 14px; color: var(--text); margin-bottom: 8px; }
+  .feedback-meaning { font-size: 13px; color: var(--text2); line-height: 1.5; }
+  .feedback-example { font-size: 13px; color: var(--text2); margin-top: 8px; font-style: italic; border-left: 2px solid var(--accent); padding-left: 10px; }
+
+  .next-btn {
+    background: linear-gradient(135deg, var(--accent), #1d7a3a);
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(46,158,79,0.35);
+  }
+  .next-btn:active { transform: scale(0.97); }
+
+  /* ===== RESULTS SCREEN ===== */
+  #results-screen { padding: 24px 20px; align-items: center; justify-content: center; text-align: center; }
+
+  .results-trophy { font-size: 80px; margin-bottom: 16px; animation: trophy 1s ease; }
+  @keyframes trophy { from { transform: scale(0) rotate(-20deg); opacity: 0; } 70% { transform: scale(1.2) rotate(5deg); } to { transform: scale(1) rotate(0); opacity: 1; } }
+
+  .results-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 32px; font-weight: 800; margin-bottom: 8px; }
+  .results-sub { font-size: 14px; color: var(--text2); margin-bottom: 32px; }
+
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 24px; }
+  .result-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    text-align: center;
+  }
+  .result-box-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 36px; font-weight: 800; }
+  .result-box-num.gold { color: var(--gold); }
+  .result-box-num.green { color: var(--green); }
+  .result-box-label { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+  .xp-gain-display {
+    background: linear-gradient(135deg, rgba(46,158,79,0.1), rgba(212,160,23,0.1));
+    border: 1px solid rgba(212,160,23,0.4);
+    border-radius: 16px;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    width: 100%;
+  }
+  .xp-gain-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 40px; font-weight: 800; color: var(--gold); }
+  .xp-gain-label { font-size: 13px; color: var(--text2); }
+
+
+
+  /* Achievement popup */
+  .achievement-popup {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-160px);
+    background: #fff;
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 400;
+    box-shadow: 0 8px 40px rgba(46,158,79,0.25);
+    transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+    min-width: 290px;
+    max-width: 370px;
+  }
+  .achievement-popup.show { transform: translateX(-50%) translateY(0); }
+  .ach-badge {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), #5abf6e);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    animation: achBadgePop 0.5s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes achBadgePop { from { transform: scale(0) rotate(-20deg); } to { transform: scale(1) rotate(0); } }
+  .ach-badge-text { font-size: 22px; font-weight: 900; color: white; font-family: 'Plus Jakarta Sans', sans-serif; }
+  .ach-title { font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
+  .ach-name { font-size: 15px; font-weight: 800; color: var(--text); margin: 1px 0; }
+  .ach-desc { font-size: 11px; color: var(--text2); }
+
+  /* ===== LEVEL-UP MODAL ===== */
+  .levelup-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    animation: fadeInBg 0.3s ease;
+  }
+  @keyframes fadeInBg { from { opacity: 0; } to { opacity: 1; } }
+  .levelup-card {
+    background: #fff;
+    border-radius: 28px;
+    padding: 36px 28px;
+    text-align: center;
+    width: 100%;
+    max-width: 340px;
+    position: relative;
+    overflow: hidden;
+    animation: levelupCardIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes levelupCardIn { from { transform: scale(0.7) translateY(40px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+  .levelup-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), #5abf6e, var(--gold));
+    animation: rainbowSlide 2s linear infinite;
+    background-size: 200% 100%;
+  }
+  @keyframes rainbowSlide { 0% { background-position: 0% 0%; } 100% { background-position: 200% 0%; } }
+  .levelup-label { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+  .levelup-num {
+    font-family: 'Outfit', sans-serif;
+    font-size: 80px; font-weight: 900;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+    animation: numPulse 0.6s 0.3s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes numPulse { from { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.15); } to { transform: scale(1); opacity: 1; } }
+  .levelup-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+  .levelup-sub { font-size: 13px; color: var(--text2); margin-bottom: 28px; }
+  .levelup-ring {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    border: 5px solid rgba(46,158,79,0.12);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+    position: relative;
+  }
+  .levelup-ring::before {
+    content: '';
+    position: absolute; inset: -5px;
+    border-radius: 50%;
+    border: 5px solid transparent;
+    border-top-color: var(--accent);
+    border-right-color: #5abf6e;
+    animation: ringRotate 1.2s ease-out forwards;
+  }
+  @keyframes ringRotate { from { transform: rotate(0deg); opacity: 0; } to { transform: rotate(360deg); opacity: 1; } }
+
+  /* ===== XP BAR BURST ===== */
+  .xp-bar-wrap.burst { animation: xpBurst 0.5s ease; }
+  @keyframes xpBurst {
+    0%   { box-shadow: 0 0 0 0 rgba(46,158,79,0); }
+    40%  { box-shadow: 0 0 0 6px rgba(46,158,79,0.3); }
+    100% { box-shadow: 0 0 0 0 rgba(46,158,79,0); }
+  }
+  .xp-bar.goal-reached {
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    animation: goalShine 0.8s ease;
+  }
+  @keyframes goalShine {
+    0%,100% { filter: brightness(1); }
+    50%     { filter: brightness(1.4); }
+  }
+
+  /* XP float animation */
+  .xp-float {
+    position: fixed;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--gold);
+    pointer-events: none;
+    z-index: 150;
+    animation: xpFloat 1.2s ease forwards;
+    text-shadow: 0 2px 10px rgba(46,158,79,0.5);
+  }
+  @keyframes xpFloat { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.3); } }
+
+  /* ===== VOCAB LIST SCREEN ===== */
+  #vocab-screen { padding: 0; }
+  .vocab-header {
+    padding: 20px 20px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+    border-bottom: 1px solid rgba(46,158,79,0.15);
+  }
+  .vocab-header h2 { font-size: 18px; font-weight: 700; flex: 1; }
+  .vocab-search {
+    padding: 12px 20px;
+    background: var(--bg);
+    position: sticky;
+    top: 64px;
+    z-index: 9;
+  }
+  .search-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .search-input:focus { outline: none; border-color: var(--accent); }
+  .search-input::placeholder { color: var(--text2); }
+
+  .vocab-list { padding: 0 20px 100px; overflow-y: auto; }
+  .vocab-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .vocab-item:active { transform: scale(0.98); }
+  .vocab-mastery {
+    width: 8px;
+    height: 40px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .vocab-content { flex: 1; min-width: 0; }
+  .vocab-word { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .vocab-meaning { font-size: 12px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .vocab-srs { font-size: 10px; color: var(--text2); text-align: right; flex-shrink: 0; }
+
+  /* ===== DAILY GOAL COMPLETE SCREEN ===== */
+  #daily-complete-screen { padding: 24px 20px; align-items: center; justify-content: center; text-align: center; flex-direction: column; }
+
+  .fireworks { font-size: 60px; margin-bottom: 8px; animation: bounce 0.5s ease infinite alternate; }
+  @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
+
+  .daily-complete-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; background: linear-gradient(135deg, var(--accent), #5abf6e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+  .daily-complete-sub { font-size: 14px; color: var(--text2); margin-bottom: 32px; }
+
+  .reward-cards { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-bottom: 24px; }
+  .reward-card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: rewardIn 0.4s ease backwards;
+  }
+  .reward-card:nth-child(1) { animation-delay: 0.1s; border: 1px solid rgba(212,160,23,0.4); }
+  .reward-card:nth-child(2) { animation-delay: 0.2s; border: 1px solid rgba(0,229,160,0.3); }
+  .reward-card:nth-child(3) { animation-delay: 0.3s; border: 1px solid rgba(46,158,79,0.3); }
+  @keyframes rewardIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+  .reward-icon { font-size: 32px; }
+  .reward-text { flex: 1; }
+  .reward-name { font-size: 15px; font-weight: 700; }
+  .reward-detail { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .reward-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; }
+  .reward-value.gold { color: var(--gold); }
+  .reward-value.green { color: var(--green); }
+  .reward-value.purple { color: var(--accent); }
+
+  /* ===== BOTTOM NAV ===== */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 480px;
+    background: rgba(245,247,245,0.97);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(46,158,79,0.15);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    z-index: 50;
+  }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; padding: 4px; border: none; background: none; color: var(--text2); font-family: 'Noto Sans JP', sans-serif; transition: all 0.2s; }
+  .nav-item.active { color: var(--accent); }
+  .nav-item:active { transform: scale(0.9); }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; font-weight: 500; }
+
+  /* ===== STATS SCREEN ===== */
+  #stats-screen { padding: 20px 20px 100px; overflow-y: auto; }
+  .stats-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .stats-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; }
+
+  .heatmap-section { margin-bottom: 24px; }
+  .section-label { font-size: 13px; color: var(--text2); font-weight: 600; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .heatmap { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .heat-cell {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: rgba(46,158,79,0.07);
+  }
+  .heat-0 { background: rgba(46,158,79,0.07); }
+  .heat-1 { background: rgba(46,158,79,0.12); }
+  .heat-2 { background: rgba(46,158,79,0.35); }
+  .heat-3 { background: rgba(46,158,79,0.65); }
+  .heat-4 { background: var(--accent); }
+
+  .big-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .big-stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+  }
+  .big-stat-num { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 34px; font-weight: 800; }
+  .big-stat-label { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+  .mastery-chart { display: flex; gap: 8px; height: 80px; align-items: flex-end; margin-bottom: 8px; }
+  .mastery-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .mastery-bar {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    transition: height 0.6s ease;
+    min-height: 4px;
+  }
+  .mastery-bar-label { font-size: 9px; color: var(--text2); }
+  .mastery-bar-num { font-size: 12px; font-weight: 700; }
+
+  /* Util */
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #1d7a3a);
+    border: none;
+    border-radius: 14px;
+    padding: 16px 32px;
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(46,158,79,0.35);
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-secondary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 32px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 500;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+  }
+  .btn-secondary:active { transform: scale(0.97); }
+
+  .sr-status-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+  .sr-chip {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .level-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(212,160,23,0.12), rgba(46,158,79,0.08));
+    border: 1px solid rgba(212,160,23,0.4);
+    border-radius: 20px;
+    padding: 6px 14px;
+  }
+  .level-text { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 800; color: var(--gold); }
+  .level-label { font-size: 11px; color: var(--text2); }
+
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HOME SCREEN -->
+  <div id="home-screen" class="screen active">
+    <div class="logo-area">
+      <div class="logo-text">Daily <span>Mission</span></div>
+      <div class="logo-sub">Business English · Spaced Repetition</div>
+    </div>
+
+    <div class="streak-banner">
+
+      <div class="streak-info">
+        <div class="streak-days" id="streak-num">0</div>
+        <div class="streak-label">日連続学習中！</div>
+      </div>
+      <div class="level-badge">
+        <div class="level-text" id="level-display">Lv.1</div>
+        <div class="level-label">レベル</div>
+      </div>
+    </div>
+
+    <div class="daily-progress-card">
+      <div class="card-header">
+        <div class="card-title">本日の目標</div>
+        <div class="card-badge" id="daily-badge">0 / 20 XP</div>
+      </div>
+      <div class="xp-bar-wrap">
+        <div class="xp-bar" id="daily-xp-bar" style="width:0%"></div>
+      </div>
+      <div class="xp-labels">
+        <span class="xp-current" id="xp-earned">0 XP</span>
+        <span class="xp-target">目標: 20 XP</span>
+      </div>
+      <div class="stat-row">
+        <div class="stat-item">
+          <div class="stat-num green" id="stat-correct">0</div>
+          <div class="stat-label">正解</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num purple" id="stat-studied">0</div>
+          <div class="stat-label">学習済み</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num red" id="stat-due">0</div>
+          <div class="stat-label">復習待ち</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="review-due-banner" class="review-due-card" onclick="startQuiz('review')" style="display:none">
+      <div class="review-due-left">
+
+        <div>
+          <div class="review-due-num" id="due-count">0</div>
+          <div class="review-due-label">件の復習が期限切れ</div>
+        </div>
+      </div>
+      <button class="review-due-btn">今すぐ復習</button>
+    </div>
+
+    <div class="mode-grid">
+      <div class="mode-card highlight" onclick="startQuiz('new')">
+        <div class="mode-name">新しい単語</div>
+        <div class="mode-desc">未学習の表現を<br>新たに習得</div>
+        <div class="mode-count" id="new-count">読込中...</div>
+      </div>
+      <div class="mode-card" onclick="startQuiz('mixed')">
+        <div class="mode-name">ミックス</div>
+        <div class="mode-desc">新規+復習を<br>バランスよく</div>
+        <div class="mode-count" id="mix-count">おすすめモード</div>
+      </div>
+      <div class="mode-card" onclick="startQuiz('listening')">
+        <div class="mode-name">穴埋め</div>
+        <div class="mode-desc">例文の空欄に<br>入る表現を選択</div>
+        <div class="mode-count">4択クイズ</div>
+      </div>
+      <div class="mode-card" onclick="startQuiz('meaning')">
+        <div class="mode-name">意味確認</div>
+        <div class="mode-desc">日本語訳から<br>英語表現を選ぶ</div>
+        <div class="mode-count">速読トレーニング</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div id="quiz-screen" class="screen">
+    <div class="quiz-header">
+      <button class="back-btn" onclick="showScreen('home')">←</button>
+      <div class="quiz-progress-wrap">
+        <div class="quiz-progress-bar">
+          <div class="quiz-progress-fill" id="quiz-prog" style="width:0%"></div>
+        </div>
+        <div class="quiz-count" id="quiz-count-label">0 / 10</div>
+      </div>
+      <div class="quiz-xp" id="session-xp">+0 XP</div>
+    </div>
+    <div class="quiz-body" id="quiz-body">
+      <!-- Dynamic content -->
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results-screen" class="screen">
+
+    <div class="results-title" id="results-title">素晴らしい！</div>
+    <div class="results-sub" id="results-sub">セッション完了</div>
+
+    <div class="results-grid">
+      <div class="result-box">
+        <div class="result-box-num gold" id="result-score">0%</div>
+        <div class="result-box-label">正解率</div>
+      </div>
+      <div class="result-box">
+        <div class="result-box-num green" id="result-correct">0</div>
+        <div class="result-box-label">正解数</div>
+      </div>
+      <div class="result-box">
+        <div class="result-box-num purple" id="result-combo">0</div>
+        <div class="result-box-label">最大コンボ</div>
+      </div>
+      <div class="result-box">
+        <div class="result-box-num" id="result-time" style="color:var(--text)">0s</div>
+        <div class="result-box-label">平均回答時間</div>
+      </div>
+    </div>
+
+    <div class="xp-gain-display">
+      <div class="xp-gain-num" id="result-xp">+0 XP</div>
+      <div class="xp-gain-label">獲得経験値</div>
+    </div>
+
+    <button class="btn-primary" onclick="startQuiz(lastMode)">もう一度</button>
+    <button class="btn-secondary" onclick="showScreen('home')">ホームに戻る</button>
+  </div>
+
+  <!-- DAILY COMPLETE SCREEN -->
+  <div id="daily-complete-screen" class="screen">
+
+    <div class="daily-complete-title">本日の目標達成！</div>
+    <div class="daily-complete-sub">素晴らしい！継続が力になります 💪</div>
+    <div class="reward-cards">
+      <div class="reward-card">
+        <div class="reward-text">
+          <div class="reward-name">デイリーボーナス</div>
+          <div class="reward-detail">本日の目標を達成</div>
+        </div>
+        <div class="reward-value gold" id="daily-xp-reward">+20 XP</div>
+      </div>
+      <div class="reward-card">
+        <div class="reward-text">
+          <div class="reward-name">ストリーク継続</div>
+          <div class="reward-detail" id="streak-reward-text">1日連続</div>
+        </div>
+        <div class="reward-value green" id="streak-reward">×1.0</div>
+      </div>
+      <div class="reward-card">
+        <div class="reward-text">
+          <div class="reward-name">記憶定着数</div>
+          <div class="reward-detail">今日学習した表現</div>
+        </div>
+        <div class="reward-value purple" id="learned-reward">0語</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="showScreen('home')">続ける</button>
+  </div>
+
+  <!-- VOCAB LIST SCREEN -->
+  <div id="vocab-screen" class="screen">
+    <div class="vocab-header">
+      <button class="back-btn" onclick="showScreen('home')">←</button>
+      <h2>単語リスト</h2>
+      <div id="vocab-total-badge" class="card-badge">0語</div>
+    </div>
+    <div class="vocab-search">
+      <input type="text" class="search-input" id="vocab-search-input" placeholder="🔍  表現を検索..." oninput="filterVocab()">
+    </div>
+    <div class="vocab-list" id="vocab-list-container"></div>
+  </div>
+
+  <!-- STATS SCREEN -->
+  <div id="stats-screen" class="screen">
+    <div class="stats-header">
+      <div class="stats-title">統計・実績</div>
+    </div>
+
+    <div class="section-label">学習カレンダー（過去28日）</div>
+    <div class="heatmap-section">
+      <div class="heatmap" id="heatmap-grid"></div>
+    </div>
+
+    <div class="big-stats">
+      <div class="big-stat-card">
+        <div class="big-stat-num" style="color:var(--accent)" id="total-xp-stat">0</div>
+        <div class="big-stat-label">累計XP</div>
+      </div>
+      <div class="big-stat-card">
+        <div class="big-stat-num" style="color:var(--gold)" id="best-streak-stat">0</div>
+        <div class="big-stat-label">最長ストリーク</div>
+      </div>
+      <div class="big-stat-card">
+        <div class="big-stat-num" style="color:var(--green)" id="mastered-stat">0</div>
+        <div class="big-stat-label">マスター済み</div>
+      </div>
+      <div class="big-stat-card">
+        <div class="big-stat-num" style="color:var(--accent2)" id="accuracy-stat">0%</div>
+        <div class="big-stat-label">総合正解率</div>
+      </div>
+    </div>
+
+    <div class="section-label">熟達度分布</div>
+    <div class="mastery-chart" id="mastery-chart"></div>
+    <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:24px">
+      <span>未学習</span><span>学習中</span><span>定着中</span><span>マスター</span>
+    </div>
+
+    <div class="section-label">実績バッジ</div>
+    <div id="achievements-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding-bottom:100px"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="nav-home" onclick="showScreen('home');setActiveNav('home')">
+      <span class="nav-label">ホーム</span>
+    </button>
+    <button class="nav-item" id="nav-vocab" onclick="showScreen('vocab');setActiveNav('vocab')">
+      <span class="nav-label">単語帳</span>
+    </button>
+    <button class="nav-item" id="nav-stats" onclick="showScreen('stats');setActiveNav('stats');renderStats()">
+      <span class="nav-label">統計</span>
+    </button>
+    <button class="nav-item" id="nav-settings" onclick="showSettingsMenu()">
+      <span class="nav-label">設定</span>
+    </button>
+  </nav>
+</div>
+
+<!-- Achievement popup -->
+<div id="achievement-popup" class="achievement-popup">
+  <div class="ach-badge"><span class="ach-badge-text" id="ach-badge-num">1</span></div>
+  <div>
+    <div class="ach-title">実績解除！</div>
+    <div class="ach-name" id="ach-name">--</div>
+    <div class="ach-desc" id="ach-desc">--</div>
+  </div>
+</div>
+
+
+
+<script>
+// ============================================================
+// VOCABULARY DATA (from PDFs)
+// ============================================================
+const VOCAB_DATA = [
+  // L1
+  { id:'v001', word:'off the top of one\'s head', meaning:'単なる思いつきで、ぱっと思いついただけで', example:'Off the top of my head, I\'d say Jessica is the best person for the job.', translation:'単なる思いつきですが、この仕事にはジェシカが最適じゃないでしょうか。', lesson:'L1', category:'表現' },
+  { id:'v002', word:'in my book', meaning:'私の意見では、私の信条から言えば', example:'In my book, using the "F-word" at work is not acceptable.', translation:'私の信条から言えば、職場でFワードを使うことは容認できないわね。', lesson:'L1', category:'表現' },
+  { id:'v003', word:'that said', meaning:'とは言っても、とは言うものの', example:'That said, I still think there\'s room for improvement.', translation:'とは言っても、改善の余地はあると、僕はいまだに考えている。', lesson:'L1', category:'表現' },
+  { id:'v004', word:'in a nutshell', meaning:'つまり、要するに、簡単に言えば', example:'In a nutshell, the operating costs are going to have to come way down.', translation:'つまり、営業経費は大きく削減しなければなりません。', lesson:'L1', category:'表現' },
+  { id:'v005', word:'to make a long story short', meaning:'かいつまんで言うと、手短に言えば', example:'To make a long story short, I\'m being transferred to Bangkok.', translation:'かいつまんで言うと、私はバンコクへ転勤になるのよ。', lesson:'L2', category:'表現' },
+  // L2
+  { id:'v006', word:'for the record', meaning:'はっきりさせるために言いますが、公式に述べると', example:'For the record, he was let go because he was no longer contributing positively.', translation:'はっきりさせるために申し上げておくと、彼が解雇されたのはもう貢献していなかったからです。', lesson:'L2', category:'表現' },
+  { id:'v007', word:'off the record', meaning:'オフレコで、内緒話として', example:'This is off the record, but I\'ve heard that the merger is not going to happen after all.', translation:'これはオフレコだが、私が聞いたところでは、結局、合併は起きないそうだ。', lesson:'L2', category:'表現' },
+  { id:'v008', word:'set the record straight', meaning:'事実・事実関係を明確にしておく、誤解を解く', example:'Let\'s set the record straight - Rakesh resigned because he wasn\'t happy here.', translation:'事実を明確にしておきましょう。ラケシュが辞任したのは、彼がここでは満足できなかったからです。', lesson:'L2', category:'表現' },
+  { id:'v009', word:'at cross purposes', meaning:'互いに誤解して、話が食い違って', example:'We\'re supposed to be cooperating, but it seems like we\'re working at cross purposes.', translation:'私達は協力し合うことになっているはずなんですが、どうも食い違いがあるようです。', lesson:'L2', category:'表現' },
+  { id:'v010', word:'run around in circles', meaning:'堂々巡りをする、努力の割に先に進まない', example:'We\'ve been running around in circles for this whole meeting.', translation:'この会議の間、ずっと堂々巡りをしていますから、問題点に戻りましょう。', lesson:'L2', category:'表現' },
+  // L3
+  { id:'v011', word:'the bottom line', meaning:'肝心な点、主要な点、最終損益', example:'The bottom line is that we have to cut costs, and layoffs are the fastest way.', translation:'肝心な点は、我々はコスト削減をしなければならないということです。', lesson:'L3', category:'表現' },
+  { id:'v012', word:'on the same page', meaning:'理解が一致している、共通認識を持っている', example:'Before going any further, I\'d like to make sure that we\'re all on the same page.', translation:'これ以上先に進む前に、全員が共通認識を持っていることを確認したいと思います。', lesson:'L3', category:'表現' },
+  { id:'v013', word:'keep things in perspective', meaning:'広い観点から考える、全体像の中で物事を捉える', example:'We must keep things in perspective. The overall situation is not that bad.', translation:'全体像の中で物事を捉える必要があります。全般的状況はそれほど悪くはありません。', lesson:'L3', category:'表現' },
+  { id:'v014', word:'get the picture', meaning:'状況を把握する、事態をのみこむ', example:'He finally got the picture after I told him four times.', translation:'4回ほど言った後、ようやく彼は事態をのみこんだ。', lesson:'L3', category:'表現' },
+  { id:'v015', word:'get one\'s point across', meaning:'言いたい事を人に分からせる', example:'I finally got my point across after raising my voice during today\'s meeting.', translation:'今日のミーティングで異を唱えることで、やっと自分の言いたい事を分かってもらえた。', lesson:'L3', category:'表現' },
+  // L4
+  { id:'v016', word:'spell out', meaning:'はっきりと分かるように説明する', example:'I don\'t know how much more I can spell it out for you.', translation:'これ以上はっきりと説明のしようがありませんね。', lesson:'L3', category:'表現' },
+  { id:'v017', word:'for the sake of argument', meaning:'議論や話を進める便宜上、仮定上の話として', example:'For the sake of argument, what if what he says about disappearing inventory is true?', translation:'仮定上の話として、もし在庫が消えたことについて彼が言っていることが本当だとすれば？', lesson:'L4', category:'表現' },
+  { id:'v018', word:'play devil\'s advocate', meaning:'わざと反対の立場をとる', example:'I\'m going to play devil\'s advocate for a minute. Suppose this new product is a failure.', translation:'わざと反対の立場をちょっととってみますね。この新製品が失敗したとします。', lesson:'L4', category:'表現' },
+  { id:'v019', word:'give someone the benefit of the doubt', meaning:'疑わしい点を善意に解釈すること、疑わしきは罰せずとすること', example:'I\'m willing to give them the benefit of the doubt and assume they\'re telling the truth.', translation:'ジャニスのことは、本当のことを話していると仮定して、疑わしきは罰せずとしても構いません。', lesson:'L4', category:'表現' },
+  { id:'v020', word:'take the high road', meaning:'倫理的に正しいことをする、フェアに一流の振る舞いをする', example:'Strive to always take the high road when dealing with customers.', translation:'顧客対応においては、最終的な損益のことを心配するのではなく、常にフェアな振る舞いをするよう努力してください。', lesson:'L4', category:'表現' },
+  { id:'v021', word:'wishful thinking', meaning:'希望的観測、甘い考え', example:'I thought business was improving, but the numbers show that was just wishful thinking.', translation:'ビジネスは改善しているものと思っていたのだが、数字を見ると、それは希望的観測なのが分かった。', lesson:'L4', category:'表現' },
+  // L5
+  { id:'v022', word:'fill someone in', meaning:'詳細を教える、詳しい情報を与える', example:'Can you fill me in on the details of the board meeting?', translation:'取締役会議の詳細を教えてもらえない？', lesson:'L5', category:'表現' },
+  { id:'v023', word:'keep someone posted', meaning:'逐次連絡する、最新情報を伝える', example:'I have to head out now, but keep me posted on what you decide.', translation:'もう出発しないとならないんですが、そちらの決定については、逐次連絡をください。', lesson:'L5', category:'表現' },
+  { id:'v024', word:'give someone a heads-up', meaning:'早めの情報を与える、注意を喚起する', example:'Make sure you give Tim a heads-up about the subject of this afternoon\'s meeting.', translation:'午後のミーティングでのトピックについて、ティムには必ず早めに情報を与えて頂戴。', lesson:'L5', category:'表現' },
+  { id:'v025', word:'touch base', meaning:'連絡する、意思確認等の話し合いをしておく', example:'Can we meet up sometime this week to touch base about the upcoming conference?', translation:'今度のカンファレンスについて確認するために、今週のどこかで会うことはできません？', lesson:'L5', category:'表現' },
+  { id:'v026', word:'run something by someone', meaning:'人に意見を聞く', example:'I like the idea, but be sure to run it by Chuck before you start working on it.', translation:'私はそのアイデアは気に入りました。でも、実際に取り掛かる前に必ずチャックの意見を聞いて下さいね。', lesson:'L5', category:'表現' },
+  // L6
+  { id:'v027', word:'in the loop', meaning:'最新の情報に通じている', example:'Keep me in the loop regarding the service launch.', translation:'サービス開始に関して最新情報の共有を頼むよ。', lesson:'L6', category:'表現' },
+  { id:'v028', word:'out of the loop', meaning:'蚊帳の外に置かれて、事情に疎い', example:'All I did was miss one meeting, and now I feel completely out of the loop!', translation:'一つのミーティングを逃しただけなのに、もうすっかり事情に疎くなった感じがするわ！', lesson:'L6', category:'表現' },
+  { id:'v029', word:'up to speed', meaning:'最新の情報に通じている、期待通りのレベルで', example:'We need to get this production line up to speed ASAP.', translation:'この生産ラインを大至急、期待通りのレベルにする必要があります。', lesson:'L6', category:'表現' },
+  { id:'v030', word:'keep someone in the dark', meaning:'知らさないでおく、隠しておく', example:'Management kept us in the dark about the merger until the last minute.', translation:'経営陣は最後の瞬間まで、合併について我々に隠していた。', lesson:'L6', category:'表現' },
+  { id:'v031', word:'on the road', meaning:'出張中で、旅行中で', example:'I spend about 10 weeks a year on the road, which isn\'t bad.', translation:'僕は一年に10週間程度は出張だけど、そのくらいなら悪くはないね。', lesson:'L6', category:'表現' },
+  // L7
+  { id:'v032', word:'spell trouble', meaning:'災いを意味する、問題をもたらす', example:'Uh-oh, this is going to spell trouble for our business.', translation:'まずいわね、これはうちのビジネスにとっては災いになるわ。', lesson:'L7', category:'表現' },
+  { id:'v033', word:'nip something in the bud', meaning:'未然に防ぐ、大事に至らないうちに食い止める', example:'We need to nip this problem in the bud before the press gets wind of it.', translation:'マスコミが嗅ぎつける前に、この問題を食い止める必要があります。', lesson:'L7', category:'表現' },
+  { id:'v034', word:'pinpoint', meaning:'正確に指摘する、正確に把握する', example:'Gavin was the one who pinpointed the source of the information leak.', translation:'その情報漏えいの源を正確に指摘したのはギャビンだった。', lesson:'L7', category:'表現' },
+  { id:'v035', word:'zero in on something', meaning:'的を絞る、注意を集中する', example:'Let\'s zero in on the core problems before small details.', translation:'ささいな点に注意を集中する前に、先ずはより大きな問題点を見ることにしましょう。', lesson:'L8', category:'表現' },
+  { id:'v036', word:'get to the bottom of something', meaning:'問題等の真相や原因を突き止める', example:'There\'s clearly something wrong here, and we need to get to the bottom of it.', translation:'明らかに何かが間違っています。その原因を突き止める必要があります。', lesson:'L8', category:'表現' },
+  { id:'v037', word:'work around', meaning:'問題などを回避する、次善策をとる', example:'You need to find ways to work around these challenges.', translation:'これらの課題を回避し、プロセスを可能な限りシンプルにする方法を見つける必要があります。', lesson:'L8', category:'表現' },
+  { id:'v038', word:'put out fires', meaning:'トラブルを解決する', example:'I often feel like I spend my workdays putting out fires.', translation:'仕事のある日って、次から次へと緊急の問題に駆けつけては、トラブル解決ばかりしているような気がよくするの。', lesson:'L8', category:'表現' },
+  { id:'v039', word:'magic bullet', meaning:'特効薬', example:'There is no magic bullet to jump-start the economy.', translation:'景気を思い切りよく活性化させるような特効薬は存在しない。', lesson:'L8', category:'表現' },
+  { id:'v040', word:'ring a bell', meaning:'思い当たる節がある、心当たりがある', example:'Yes, his name rings a bell. Now where did I meet him before?', translation:'ええ、彼の名前には思い当たる節があるわ。さてさて、どこで彼と会ったのかしら？', lesson:'L8', category:'表現' },
+  // L9-L10
+  { id:'v041', word:'slip one\'s mind', meaning:'度忘れする、つい忘れる', example:'Sorry I forgot to forward you that e-mail yesterday. It completely slipped my mind.', translation:'例のメールを昨日転送し忘れてごめんなさい。まるっきり忘れていたわ。', lesson:'L9', category:'表現' },
+  { id:'v042', word:'fall short', meaning:'目標、期待、標準等に達しない、及ばない', example:'We fell short of our estimated revenues by 15% last year.', translation:'昨年の収益は、予測に15%及ばなかった。', lesson:'L9', category:'表現' },
+  { id:'v043', word:'lackluster', meaning:'パッとしない', example:'His latest performance was lackluster, to say the least.', translation:'彼の直近のパフォーマンスは、控え目に言ってもパッとしないものです。', lesson:'L9', category:'表現' },
+  { id:'v044', word:'subpar', meaning:'標準以下の、普通以下の', example:'The sales team\'s numbers this month are subpar at best.', translation:'営業チームの今月の数字は、ひいき目に見ても標準以下だね。', lesson:'L9', category:'表現' },
+  { id:'v045', word:'live up to', meaning:'期待や評判等に応える、沿う', example:'We hope Tracy can live up to the new responsibilities we\'ve given her.', translation:'トレーシーが、会社が彼女に与えた新たな担当業務で期待に応えてくれることを望んでいます。', lesson:'L9', category:'表現' },
+  { id:'v046', word:'make the grade', meaning:'成功する、必要な水準に達する', example:'I didn\'t make the grade as a lawyer, so I decided to study something else.', translation:'私は弁護士としてはモノにならなかったので、学校に戻って別のことを勉強することに決めました。', lesson:'L9', category:'表現' },
+  { id:'v047', word:'half-baked', meaning:'生半可な、中途半端な', example:'We have a half-baked proposal that still needs a lot of work.', translation:'これってのは、まだまだ多くの作業が必要な中途半端な企画案だね。', lesson:'L10', category:'表現' },
+  { id:'v048', word:'cut corners', meaning:'手を抜く', example:'We don\'t cut corners here, because it can end up being more costly in the long run.', translation:'うちじゃ、手を抜くことはないよ。長い目で見て、より高くつくことになりかねないからね。', lesson:'L10', category:'表現' },
+  { id:'v049', word:'slack off', meaning:'怠ける、サボる', example:'Peter was a hard worker when we hired him. Now he slacks off all the time.', translation:'雇った時はピーターは働き者だった。今は四六時中サボっている。', lesson:'L10', category:'表現' },
+  { id:'v050', word:'deliver the goods', meaning:'期待された結果を出す、約束を果たす', example:'He has a solid reputation. He always delivers the goods.', translation:'彼は確固たる評判を得ています。期待された結果を常に出します。', lesson:'L10', category:'表現' },
+  // L11-L12
+  { id:'v051', word:'go the extra mile', meaning:'求められる以上の一層の努力をする', example:'Emma goes the extra mile in everything she does.', translation:'彼女は行なうすべての事において、求められる以上の努力をします。', lesson:'L10', category:'表現' },
+  { id:'v052', word:'narrow down', meaning:'絞りこむ、範囲を限定する', example:'We have narrowed down the candidates for the job to three.', translation:'この仕事の候補者を3人に絞りました。', lesson:'L11', category:'表現' },
+  { id:'v053', word:'rule something out', meaning:'除外する、考慮からはずす', example:'We can rule out a mechanical failure as the root cause of this accident.', translation:'この事故の根本的な原因として、機械的な故障を除外することができる。', lesson:'L11', category:'表現' },
+  { id:'v054', word:'put something on the back burner', meaning:'後回しにする、棚上げにする', example:'Let\'s put this project on the back burner and focus on more immediate problems first.', translation:'このプロジェクトは後回しにして、まずは緊急の問題にフォーカスしましょう。', lesson:'L11', category:'表現' },
+  { id:'v055', word:'take a backseat', meaning:'優先順位を譲る、脇役を務める', example:'Everything else takes a backseat to preparing for the product launch.', translation:'製品の発売開始の準備に、何もかもが優先順位を譲ることになります。', lesson:'L11', category:'表現' },
+  { id:'v056', word:'pros and cons', meaning:'良い点と悪い点', example:'Let\'s weigh the pros and cons of each option before we make any decisions.', translation:'いかなる決定を下すより前に、それぞれの選択肢の良い点と悪い点を比較検討しよう。', lesson:'L12', category:'表現' },
+  { id:'v057', word:'upside / downside', meaning:'良い面・利点 / マイナス面・弱点', example:'One upside to the new office is its location. The downside is the price.', translation:'新しいオフィスの良い面の一つは、そのロケーションだ。マイナス面は価格だ。', lesson:'L12', category:'表現' },
+  { id:'v058', word:'apples and oranges', meaning:'全く性質が異なるため比較できない二種類のもの', example:'Comparing our company to theirs is like comparing apples and oranges.', translation:'我が社と彼らの会社が比較されるとは信じがたいね。無意味な比較だよ。', lesson:'L12', category:'表現' },
+  { id:'v059', word:'cancel out', meaning:'相殺する、帳消しにする', example:'The losses will probably cancel out much of the profits.', translation:'損失がたぶん利益の大半を帳消しにするだろう。', lesson:'L12', category:'表現' },
+  // L13-L14
+  { id:'v060', word:'pan out', meaning:'うまくいく、良い結果が出る', example:'Let\'s see how this pans out before we fully commit to this project.', translation:'このプロジェクトに全面的にコミットする前に、こいつがどういう結果になるか見ようじゃないか。', lesson:'L13', category:'表現' },
+  { id:'v061', word:'worst-case scenario', meaning:'最悪の事態、最悪のシナリオ', example:'Let\'s consider what the worst-case scenario might be and plan for it.', translation:'最悪の事態はどのようなものになるか検討して、それに向けた計画を立てましょう。', lesson:'L13', category:'表現' },
+  { id:'v062', word:'best-case scenario', meaning:'最良のシナリオ、最良の場合', example:'The best-case scenario is to find Candy\'s replacement before she leaves.', translation:'最良のシナリオは、キャンディの後任を彼女が去る前に見つけることです。', lesson:'L13', category:'表現' },
+  { id:'v063', word:'anyone\'s guess', meaning:'予測困難なこと、誰にも分からないこと', example:'It\'s anyone\'s guess how well the new system will work.', translation:'新しいシステムかどのくらいうまく機能するかどうかは、誰にも分からない。', lesson:'L13', category:'表現' },
+  { id:'v064', word:'the jury is still out', meaning:'結論がまだ出ていない、決定がまだ下されていない', example:'The jury\'s still out on the new plant manager, but we\'re hoping he works out.', translation:'新しいプラントマネージャーの件はまだ結論が出ていませんが、彼が適任であることを望んでいます。', lesson:'L13', category:'表現' },
+  { id:'v065', word:'hedge one\'s bets', meaning:'リスク分散のために複数のものに賭ける', example:'I\'m hedging our bets by staying in touch with two other companies.', translation:'他の2社と接触を保つことで、リスク分散をしています。', lesson:'L14', category:'表現' },
+  { id:'v066', word:'play it safe', meaning:'冒険をしない、安全策を取る、大事を取る', example:'He always plays it safe, which is why he\'s not leader material in this line of job.', translation:'彼はいつも安全策を取る。だからこの手の仕事ではリーダー向きではない。', lesson:'L14', category:'表現' },
+  { id:'v067', word:'tried-and-true', meaning:'有効性等を実証済みの、絶対確実な', example:'This new model is a beefed-up version of our tried-and-true existing products.', translation:'その新しいモデルは当社の実証済みの既存商品の強化版です。', lesson:'L14', category:'表現' },
+  { id:'v068', word:'to be on the safe side', meaning:'大事を取って、念のため', example:'To be on the safe side, let\'s leave for the meeting half an hour earlier than planned.', translation:'大事を取って、予定より30分前に会議に向けて出発しましょう。', lesson:'L14', category:'表現' },
+  { id:'v069', word:'best bet', meaning:'一番確実な方法、一番のお薦め、最善策', example:'Your best bet at reaching him is definitely email.', translation:'彼に連絡するなら、一番確実な方法は絶対メールだよ。', lesson:'L14', category:'表現' },
+  // L15
+  { id:'v070', word:'calculated risk', meaning:'予測されたリスク、計算済みのリスク', example:'The company took a calculated risk when they put out the new smartphone series.', translation:'その企業はスマートフォンの新しいシリーズを発売する際に、計算済みのリスクをとった。', lesson:'L15', category:'表現' },
+  { id:'v071', word:'take the plunge', meaning:'思い切ったことをする、冒険をする', example:'She took the plunge and started her own business after leaving the company.', translation:'会社を去った後、彼女は思い切って自分のビジネスを始めた。', lesson:'L15', category:'表現' },
+  { id:'v072', word:'make-or-break', meaning:'いちかばちかの、運命を左右する', example:'This deal can make or break our company. We can\'t screw it up.', translation:'この取引は我が社の運命を左右する可能性がある。失敗は許されない。', lesson:'L15', category:'表現' },
+  { id:'v073', word:'sink or swim', meaning:'いちかばちか、のるかそるか', example:'We\'re in a highly competitive environment. You either sink or swim.', translation:'我が社はきわめて競争的な環境にいる。のるかそるかしかないんだ。', lesson:'L15', category:'表現' },
+  { id:'v074', word:'go for it', meaning:'頑張ってやってみる、目指す', example:'Kevin\'s idea sounds great! I think we should definitely go for it.', translation:'ケビンのアイデアはとてもよさそうね！絶対にそれで行ってみるべきだと思うわ。', lesson:'L15', category:'表現' },
+  // L16-L17
+  { id:'v075', word:'have a lot on one\'s plate', meaning:'やることがたくさんある', example:'I\'m sorry, but I can\'t help you with this. I have too much on my plate already.', translation:'悪いけど、この件であなたの助けにはなれないわ。すでに、やることがたくさんありすぎるのよ。', lesson:'L16', category:'表現' },
+  { id:'v076', word:'swamped', meaning:'仕事等で忙殺される', example:'I\'m swamped with customer complaints about late deliveries.', translation:'僕は納入の遅れに関する顧客の苦情で忙殺されている。', lesson:'L16', category:'表現' },
+  { id:'v077', word:'pressed for time', meaning:'時間に追われている', example:'Can this wait? I\'m really pressed for time right now.', translation:'これ、後でもいいかしら? 今、すごく時間に追われているのよ。', lesson:'L16', category:'表現' },
+  { id:'v078', word:'take the ball and run with it', meaning:'計画等を人から干渉されずに自主的に推し進める', example:'Why don\'t you take the ball and run with it and write up a proposal?', translation:'あなたのアイデアはとてもいいと思うわ。それを推し進めて企画書をまとめたらどうかしら？', lesson:'L16', category:'表現' },
+  { id:'v079', word:'when the going gets tough', meaning:'状況が厳しくなると、事態が困難になると', example:'When the going gets tough, we need people with a positive attitude.', translation:'事態が困難になった時は、ポジティブな態度の人達が必要です。', lesson:'L16', category:'表現' },
+  { id:'v080', word:'pitch in', meaning:'力を貸す、協力する', example:'If you need help answering phones, I\'d be happy to pitch in.', translation:'電話対応の手伝いが必要なら、喜んで力を貸すわよ。', lesson:'L17', category:'表現' },
+  // L17-L18
+  { id:'v081', word:'short-handed', meaning:'人手不足で', example:'Accounting\'s been really short-handed since Dave left.', translation:'デイブがやめてからというもの、経理部はひどく人手不足ね。', lesson:'L17', category:'表現' },
+  { id:'v082', word:'rise to the occasion', meaning:'突発的な難局においてうまく対応する', example:'Presiding over those negotiations was a tough challenge, but Derek rose to the occasion.', translation:'あの交渉を取り仕切る進行役になるのはタフな挑戦だった。だがデレクは実に臨機応変に対応した。', lesson:'L17', category:'表現' },
+  { id:'v083', word:'cover for someone', meaning:'仕事で代わりを務める', example:'Sneha had a family emergency, so I\'m covering for her today.', translation:'スネーハは家族のことで緊急の用事があって、今日は私が彼女の代わりを務めています。', lesson:'L17', category:'表現' },
+  { id:'v084', word:'go-to person', meaning:'特定の物事や状況に関して頼りになる人', example:'Micky is our go-to guy for anything tax regulation related.', translation:'ミッキーは何でも税法に関することならば頼りになるやつだ。', lesson:'L17', category:'表現' },
+  { id:'v085', word:'hands-off manager', meaning:'無干渉主義の、口出ししないマネージャー', example:'My boss is such a hands-off manager that I hardly ever see him.', translation:'私の上司は無干渉主義なので、ほとんど会うことはありません。', lesson:'L18', category:'表現' },
+  { id:'v086', word:'go over someone\'s head', meaning:'直属の上司等の頭越しに事を進める', example:'It was wrong of Sarah to go over her superior\'s head, but I understand why.', translation:'サラが自分の上司を飛ばして、事を進めるのは間違っていた。だが、彼女がそうした理由は理解できる。', lesson:'L18', category:'表現' },
+  { id:'v087', word:'step on someone\'s toes', meaning:'人の権利や領分を侵す', example:'I don\'t wanna step on anyone\'s toes, but I\'m gonna have to re-do the numbers.', translation:'誰の領分も侵したくはないのだけれど、数字が正確かどうか確認するために、再度計算せざるを得ないわ。', lesson:'L18', category:'表現' },
+  { id:'v088', word:'lose face', meaning:'面目を失う、顔がつぶれる', example:'James lost face by yelling in the meeting with the Chinese company.', translation:'ジェームズは中国系の会社とのミーティングで怒鳴ったせいで、顔が潰れてしまった。', lesson:'L18', category:'表現' },
+  { id:'v089', word:'save face', meaning:'メンツを保つ', example:'In many Asian cultures, saying no indirectly is a way for both parties to save face.', translation:'アジアの文化の多くにおいては、「ノー」を間接的に言うことは両方の当事者がメンツを保つための方法である。', lesson:'L18', category:'表現' },
+  // L19
+  { id:'v090', word:'hands-on manager', meaning:'部下と共に実務に関わる、直接現場に出てくるマネージャー', example:'I have a lot of respect for my boss. He\'s a hands-on manager.', translation:'私は自分の上司をとても尊敬しています。彼はハンズオンな上司で、しばしば私達と共に業務の前線で戦うからです。', lesson:'L19', category:'表現' },
+  { id:'v091', word:'micromanage', meaning:'事細かに管理する', example:'My boss is such a micromanager; she\'s always interfering with every aspect of my work.', translation:'僕の上司は本当に管理が細かい。僕の仕事のあらゆる側面に干渉してくる。', lesson:'L19', category:'表現' },
+  { id:'v092', word:'breathing down your neck', meaning:'人を厳しく監視する、人にまとわりつく', example:'It\'s hard to work when your boss is breathing down your neck.', translation:'上司が厳しく監視していると、仕事がやりにくい。', lesson:'L19', category:'表現' },
+  { id:'v093', word:'leeway', meaning:'時間、カネ等の余裕、自由裁量の余地', example:'They gave me some leeway in selecting project team members.', translation:'彼らはプロジェクトチームメンバーの選択について、私に自由裁量の余地を与えてくれた。', lesson:'L19', category:'表現' },
+  { id:'v094', word:'get off someone\'s back', meaning:'人に干渉するのをやめる、人を煩わすのをやめる', example:'I need my boss to get off my back and trust that I\'m going to get the job done.', translation:'上司に私への干渉を止めて、私が仕事をやり遂げることができると信じてもらう必要がある。', lesson:'L19', category:'表現' },
+  // L20
+  { id:'v095', word:'kudos', meaning:'称賛、栄光', example:'Kudos to Diane, who did an excellent job organizing this conference!', translation:'ダイアンに拍手を！彼女は素晴らしい働きぶりで、このカンファレンスを取り仕切ってくれました。', lesson:'L20', category:'表現' },
+  { id:'v096', word:'give someone credit', meaning:'人を正しく評価する、人の功績を認める', example:'Michaels is a great boss. He\'s always the first to give credit for a job well done.', translation:'マイケルズはすばらしい上司だ。優れた仕事をする者に対して、いつも一番最初に正当な評価をする人である。', lesson:'L20', category:'表現' },
+  { id:'v097', word:'take credit for something', meaning:'～を自分の手柄にする', example:'My boss always takes credit for my ideas. It\'s so unfair!', translation:'私の上司は私のアイデアをいつだって自分の手柄にする。本当に不公平だ！', lesson:'L20', category:'表現' },
+  { id:'v098', word:'pep talk', meaning:'激励の短いスピーチ、励ましや活を入れるための言葉', example:'Hey boss, I need a pep talk before the big presentation today.', translation:'すいません。今日の大きなプレゼンの前に活を入れて欲しいんですけど。', lesson:'L20', category:'表現' },
+  { id:'v099', word:'give a pat on the back', meaning:'褒める、激励の言葉を与える', example:'Everyone deserves a pat on the back for a job well done this year.', translation:'今年は全員が素晴らしい働きで称賛に値する。', lesson:'L20', category:'表現' },
+  // L21-L22
+  { id:'v100', word:'sleep on it', meaning:'それについて一晩寝かせて考える', example:'We don\'t have to decide right now. Why don\'t we sleep on it?', translation:'今すぐに決める必要はありません。一晩寝かせて考えて、また明朝ミーティングしませんか？', lesson:'L21', category:'表現' },
+  { id:'v101', word:'think through', meaning:'とことんまで考える、考え抜く', example:'We need to think through the consequences of our actions before taking any decisive steps.', translation:'断固とした措置をとる前に、自分達の行動がもたらす結果を考え抜く必要がある。', lesson:'L21', category:'表現' },
+  { id:'v102', word:'think twice', meaning:'再考する、熟考する、ためらう', example:'I would think twice before spending that much money on just one advertisement.', translation:'あなた達は予算オーバーはしていないわ。でも、私だったら、たった一本の広告にそれだけ多くのお金を費やす前に再考するでしょうね。', lesson:'L21', category:'表現' },
+  { id:'v103', word:'make the call', meaning:'重要な決断を下す', example:'It\'s a tough call to make, but I think I\'d prefer to hire Jonathan over Karen.', translation:'決断するのは難しいが、僕はカレンよりジョナサンを雇うほうを選ぶね。', lesson:'L21', category:'表現' },
+  { id:'v104', word:'call the shots', meaning:'采配を振るう、命令をする', example:'You don\'t call the shots around here, Lisa, so stop making promises to customers.', translation:'リサ、あなたはここで采配を振るう立場にないのだから、顧客にあのような約束をするのは止めて頂戴。', lesson:'L22', category:'表現' },
+  { id:'v105', word:'final say', meaning:'最終決定権、最終的な意見', example:'The boss has the final say in hiring decisions.', translation:'上司には採用について最終決定権がある。', lesson:'L22', category:'表現' },
+  { id:'v106', word:'keep one\'s options open', meaning:'選択肢を残しておく、決定を保留する', example:'We haven\'t decided on a course of action yet. For now, we\'re keeping our options open.', translation:'行動プランについてはまだ決めていません。今のところ、決定を保留しています。', lesson:'L22', category:'表現' },
+  { id:'v107', word:'leave the door open', meaning:'可能性や余地を残しておく', example:'We will leave the door open for future collaboration with ABC Corporation.', translation:'ABC社との将来のコラボの可能性を残しておくことにしましょう。', lesson:'L22', category:'表現' },
+  { id:'v108', word:'cross that bridge when we come to it', meaning:'いざそのときになって考える、取り越し苦労はやめる', example:'It\'s true that this can pose a risk in the future, but let\'s cross that bridge when we come to it.', translation:'これが将来、危険をもたらす可能性があるのは本当です。でも、いざそのときになったら考えましょう。', lesson:'L22', category:'表現' },
+  { id:'v109', word:'jump the gun', meaning:'早まったことをする、慌てて先走る', example:'Don\'t jump the gun and assume we\'d get the contract.', translation:'早まって契約が取れたものと思い込まないように。', lesson:'L23', category:'表現' },
+  { id:'v110', word:'get down to business', meaning:'本題に入る、仕事に真剣に取り掛かる', example:'OK, everyone\'s here. Enough of the chitchat, let\'s get down to business.', translation:'さて、みんな揃ったな。おしゃべりはこれくらいにして、本題に入るとしようか。', lesson:'L23', category:'表現' },
+  // L23-L24
+  { id:'v111', word:'cut to the chase', meaning:'本題に入る、要点を言う', example:'We don\'t have a lot of time, so let\'s cut to the chase.', translation:'あまり時間がないので、早速本題に入りましょう。', lesson:'L23', category:'表現' },
+  { id:'v112', word:'see eye to eye', meaning:'見解が一致する', example:'The creative director and I have always worked well together. We see eye to eye on most things.', translation:'クリエーティブディレクターと僕はいつも相性良く仕事をしてきた。僕たちは殆どのことで見解が一致する。', lesson:'L23', category:'表現' },
+  { id:'v113', word:'agree to disagree', meaning:'意見の不一致を認める、見解の相違を認め合う', example:'We\'ve agreed to disagree on those minor issues in order to cooperate on others.', translation:'私達は他の点で協力するために、些細な問題については見解の相違があると認めることにした。', lesson:'L23', category:'表現' },
+  { id:'v114', word:'wrap up', meaning:'仕事等を終わらせる・完成させる、会議等を切り上げる', example:'We can head out once we wrap up the weekly reports.', translation:'ウィークリーレポートをまとめあげたら、出発できるぞ。', lesson:'L23', category:'表現' },
+  { id:'v115', word:'bring up', meaning:'議題、話題、問題などを持ち出す、言い出す', example:'The issue of overtime pay was brought up in the last meeting.', translation:'残業代の問題が前回の会議で持ち出された。', lesson:'L24', category:'表現' },
+  { id:'v116', word:'elephant in the room', meaning:'見て見ぬふりをされる問題', example:'Our CEO\'s past scandals are the elephant in the room during any press conference he gives.', translation:'我が社のCEOが開くどの記者会見においても、彼の過去のスキャンダルは、見て見ぬふりをされる問題だ。', lesson:'L24', category:'表現' },
+  { id:'v117', word:'clear the air', meaning:'疑惑や誤解、わだかまり等を話し合って一掃する', example:'We need to discuss this issue frankly in order to clear the air.', translation:'わだかまりを解消するためには、この問題について率直に話し合う必要がある。', lesson:'L24', category:'表現' },
+  { id:'v118', word:'put someone on the spot', meaning:'質問等で人を困らせる、人を困った立場に追い込む', example:'I\'m not trying to put you on the spot or anything, boss. But when are we going to get a pay-raise?', translation:'困らせようとしているわけではないんです、ボス。でも私達の昇給はいつなんですか？', lesson:'L24', category:'表現' },
+  { id:'v119', word:'out of the blue', meaning:'出し抜けに、唐突に', example:'Nikesh gave his notice out of the blue after almost ten years on the job.', translation:'ニケシュが10年間近く勤めた後、唐突に辞職願いを出したことに我々はショックを受けた。', lesson:'L24', category:'表現' },
+  // L25-L27
+  { id:'v120', word:'map out', meaning:'計画などを精密に立てる', example:'Effective leaders connect the dots and map out a realistic plan of action.', translation:'能力のあるリーダーというものは、点を結んで全体像を作り上げ、現実的な行動計画を綿密に計画するものだ。', lesson:'L25', category:'表現' },
+  { id:'v121', word:'game plan', meaning:'戦略、作戦', example:'We\'re just not making as much as we need to. I think it\'s time for a new game plan.', translation:'とにかく、収益が必要な額に達していない。新しい戦略を立てる時だと思う。', lesson:'L25', category:'表現' },
+  { id:'v122', word:'from the ground up', meaning:'最初から、新規に、土台から', example:'The proposal has to be carefully crafted from the ground up.', translation:'その企画案は土台から慎重に作成しなければならない。', lesson:'L25', category:'表現' },
+  { id:'v123', word:'shoot for', meaning:'何々・いついつを目指す・目標にする', example:'We don\'t have a strict timeline yet, but we\'re shooting for November.', translation:'きっちりと決められたスケジュール表はまだないのだが、11月を目指している。', lesson:'L25', category:'表現' },
+  { id:'v124', word:'step up one\'s game', meaning:'パフォーマンスやスキルを改善する', example:'Sales have been sluggish this quarter. We\'ve got to step up our game.', translation:'この四半期は売り上げに活気がない。我々はパフォーマンスを改善しないといけない。', lesson:'L26', category:'表現' },
+  { id:'v125', word:'take stock of', meaning:'吟味する、評価する、棚卸しする', example:'Let\'s take stock of the situation before we decide what the best course of action is.', translation:'最善策が何かを決定する前に、現状を吟味することにしましょう。', lesson:'L26', category:'表現' },
+  { id:'v126', word:'big picture', meaning:'大局、全体像', example:'Seeing the big picture is an essential leadership quality.', translation:'大局を観ることは、リーダーには絶対不可欠な特質です。', lesson:'L26', category:'表現' },
+  { id:'v127', word:'status quo', meaning:'現状', example:'Our upper management is very conservative. They\'d rather maintain the status quo.', translation:'我が社の経営幹部たちは非常に保守的だ。新しいやり方を採用してリスクを取るよりは、現状を維持したがる。', lesson:'L26', category:'表現' },
+  { id:'v128', word:'in the same boat', meaning:'同じ境遇や苦境にある', example:'Sales were bad this quarter, but when we look at our competitors it seems like everyone\'s in the same boat.', translation:'今四半期の売上は悪いけれど、競合相手達を見ると、どこも同じ境遇のようだ。', lesson:'L26', category:'表現' },
+  { id:'v129', word:'stand to gain / lose', meaning:'儲かる立場にいる / 損をする立場にいる', example:'We stand to gain an advantage over our competitors if the new law is introduced.', translation:'もしこの新しい法律が導入されれば、我が社は競合他社達より有利な立場となります。', lesson:'L26', category:'表現' },
+  { id:'v130', word:'at stake', meaning:'危うくなって、賭けられて', example:'He was a little nervous about giving that presentation because there was a lot at stake.', translation:'非常に多くのものが賭かっていたので、彼はそのプレゼンを行うことについて、少しナーバスだった。', lesson:'L27', category:'表現' },
+  // L27-L30
+  { id:'v131', word:'there\'s more to something than meets the eye', meaning:'表面上は分からないものがある', example:'This salary freeze has more to it than meets the eye.', translation:'今回の昇給の凍結には見た目以上の事情があると知っている。', lesson:'L27', category:'表現' },
+  { id:'v132', word:'there\'s a fine line between A and B', meaning:'AとBの間には微妙な違いがある、紙一重の差しかない', example:'There\'s a fine line between being bold and being reckless in business.', translation:'ビジネス上の決定をする上で、大胆であることと無謀であることの間には微妙な違いがある。', lesson:'L27', category:'表現' },
+  { id:'v133', word:'wake-up call', meaning:'警告、警鐘、緊急の注意を喚起するもの', example:'Tim\'s departure has been a real wake-up call that the company is changing.', translation:'ティムが去っていったことは、この会社が変化しつつあるという大きな警告だった。', lesson:'L27', category:'表現' },
+  { id:'v134', word:'belt-tightening', meaning:'緊縮経営、金融引き締め、倹約', example:'Because of all the belt-tightening around here we\'re not going to have a holiday party this year.', translation:'うちの会社では経費削減のために、今年は年末パーティーはしないのよ。', lesson:'L27', category:'表現' },
+  { id:'v135', word:'on the right track', meaning:'考え方や方法が正しい方向にある、いい線を行っている', example:'We haven\'t sorted out the problem just yet. But I think we\'re on the right track.', translation:'この問題、まだ収拾はついていないのですが、解決に向けて正しい方向で進んでいると考えます。', lesson:'L28', category:'表現' },
+  { id:'v136', word:'off base', meaning:'全くの見当はずれ・的外れ', example:'You\'re way off base on this one. Let me show you the facts.', translation:'君は、この件に関しては全くの的外れだよ。事実を教えさせてくれよ。', lesson:'L28', category:'表現' },
+  { id:'v137', word:'look good on paper', meaning:'理論上や書面上ではよく見える', example:'Even if the plan looks good on paper, it may not work in reality.', translation:'その計画は理論上ではよく見えるとしても、現実には機能しないかも知れません。', lesson:'L28', category:'表現' },
+  { id:'v138', word:'red flag', meaning:'危険信号、赤旗、警告', example:'Let\'s keep this hush-hush. We don\'t want to raise any red flags to our suppliers.', translation:'これは内緒にしておきましょう。うちのサプライヤー達に危険信号を察知されたくありませんから。', lesson:'L28', category:'表現' },
+  { id:'v139', word:'whistle-blower', meaning:'内部告発者、職場の不正を通報する人', example:'He blew the whistle on the company\'s wrongdoing by talking to the media.', translation:'彼は会社の悪事をマスコミに話すことで内部告発した。', lesson:'L28', category:'表現' },
+  { id:'v140', word:'come up against', meaning:'困難・反対・問題などに直面する', example:'We expect to come up against quite a lot of resistance to the plan.', translation:'我々はこの計画に対する相当の抵抗に直面すると予想しています。', lesson:'L29', category:'表現' },
+  { id:'v141', word:'uphill battle', meaning:'苦戦、厳しい状況下での戦い', example:'Building up a new client base is an uphill battle in this economy.', translation:'新しい顧客ベースの構築は、この景気では苦戦となる。', lesson:'L29', category:'表現' },
+  { id:'v142', word:'catch-22', meaning:'にっちもさっちもいかない状態、逃れようのないジレンマ', example:'It\'s a catch-22. No matter what I do, the boss will be angry with me!', translation:'ジレンマもいいところよ。私が何をしようと、ボスは怒るんだから。', lesson:'L29', category:'表現' },
+  { id:'v143', word:'close call', meaning:'危機一髪、危ないところ', example:'The accident in the warehouse was a close call, but luckily no one was injured.', translation:'倉庫で起きた事故は危ないところだった。幸いなことにケガ人は一人も出なかった。', lesson:'L29', category:'表現' },
+  { id:'v144', word:'cut one\'s losses', meaning:'これ以上損をしないうちに手を引く、損切りする', example:'Marketing abroad is costing us more than it\'s helping us, so let\'s cut our losses and pull the advertisements.', translation:'海外でのマーケティングは効果以上に費用がかかっています。これ以上損をしないうちに手を引いて、広告も中止しましょう。', lesson:'L29', category:'表現' },
+  // L30
+  { id:'v145', word:'crunch the numbers', meaning:'大量の計算をする', example:'Let me do some number crunching first, then I will get back to you.', translation:'まず私に計算をさせてください。それから連絡します。', lesson:'L30', category:'表現' },
+  { id:'v146', word:'run the numbers', meaning:'試算する、数字を出してみる', example:'Let\'s run the numbers again before we proceed.', translation:'先へ進む前に再度試算して、これが財政的に道理にかなっているか確かめましょう。', lesson:'L30', category:'表現' },
+  { id:'v147', word:'ballpark figure', meaning:'概算、おおよその数字・金額', example:'He didn\'t know the exact price, but when I asked him for a ballpark figure, he said $6,000.', translation:'彼は正確な価格を知らなかったが、私がおおよその数字を求めると、6千ドルと言った。', lesson:'L30', category:'表現' },
+  { id:'v148', word:'rule of thumb', meaning:'経験則', example:'As a rule of thumb, 80% of a company\'s profits comes from 20% of its customers.', translation:'経験則から言うと、企業の利益の80%は20%の顧客から上がるものです。', lesson:'L30', category:'表現' },
+  { id:'v149', word:'tax loophole', meaning:'税金の抜け穴、法律等の抜け穴', example:'After this new law passes, we won\'t be able to take advantage of any tax loopholes.', translation:'この新しい法律が成立したら、我が社は税金の抜け穴を利用することはもうできません。', lesson:'L30', category:'表現' },
+  { id:'v150', word:'talk someone into something', meaning:'人を説得して～させる', example:'If you can talk the boss into approving your idea, I\'ll help with the implementation.', translation:'もしあなたのアイデアを承認するように、あなたがボスを説得できるのなら、ええ、いいですとも、アイデアの実行に関して助けになるわ。', lesson:'L31', category:'表現' },
+  // more items
+  { id:'v151', word:'buy-in', meaning:'同意・サポート、賛同を得る', example:'Do you think you can get buy-in from upper management?', translation:'君は経営陣から賛同を得ることができると思うか？', lesson:'L32', category:'表現' },
+  { id:'v152', word:'on board', meaning:'賛成・支持・同調して、仲間に加わって', example:'Kudos to Tom for getting the boss on board with our proposal.', translation:'我々の企画にボスの賛成を取り付けたトムはさすがだよ！', lesson:'L32', category:'表現' },
+  { id:'v153', word:'give something the green light', meaning:'計画等を承認する、許可を与える', example:'They\'ve given us the green light to move forward with the campaign.', translation:'彼らは我々がキャンペーンを進めることを承認した。', lesson:'L32', category:'表現' },
+  { id:'v154', word:'jump through hoops', meaning:'手続き・審査等で複雑な手順を踏む', example:'The bank really made us jump through hoops to get the loan from them.', translation:'銀行は、我々が彼らから融資を受けるために実に複雑な手順を踏ませた。', lesson:'L33', category:'表現' },
+  { id:'v155', word:'sign off on', meaning:'署名して承認する', example:'We\'ll send the papers over as soon as the boss signs off on them.', translation:'上司が署名して承認し次第、書類をそちらへ送ります。', lesson:'L33', category:'表現' },
+  { id:'v156', word:'set someone apart', meaning:'際立たせる、目立たせる', example:'What sets them apart from their competitors is the quality of their work.', translation:'彼らを競合他社から際立たせているのは、彼らの仕事の質の高さです。', lesson:'L33', category:'表現' },
+  { id:'v157', word:'cut above', meaning:'一段上、一枚上手', example:'We must admit that they\'re a cut above us quality-wise.', translation:'品質に関しては、彼らが我が社より一段上であることを認めねばならない。', lesson:'L33', category:'表現' },
+  { id:'v158', word:'top-notch', meaning:'一流の、最高の、ピカイチの', example:'The advice the consultant gave us was top-notch.', translation:'あのコンサルタントがくれたアドバイスは最高だった。', lesson:'L33', category:'表現' },
+  { id:'v159', word:'the upper hand', meaning:'優勢、優位、支配', example:'Our competitor has a larger market share in this region. They have the upper hand over us.', translation:'我が社の競合相手は、この地域では、より大きなマーケットシェアを占めている。彼らは我々より優勢だ。', lesson:'L33', category:'表現' },
+  { id:'v160', word:'competitive edge', meaning:'競争上の優位性、競争力', example:'If we don\'t keep innovating, we\'ll lose our competitive edge.', translation:'我々が技術革新を止めてしまったら、競争力を失うことになるだろう。', lesson:'L33', category:'表現' },
+];
+
+// ============================================================
+// SRS (Spaced Repetition System) - SM-2 inspired
+// ============================================================
+const INTERVALS = [1, 3, 7, 14, 30, 90]; // days
+const MASTERY_LEVELS = ['未学習', '学習中1', '学習中2', '定着中', 'マスター', '完全習得'];
+
+function loadState() {
+  const def = {
+    cards: {}, // id -> { interval, ef, due, reps, lapses, state }
+    stats: { streak: 0, lastStudied: '', totalXP: 0, bestStreak: 0, totalCorrect: 0, totalAnswered: 0, dailyHistory: {} },
+    today: { xp: 0, correct: 0, studied: 0 },
+    achievements: {},
+    level: 1,
+    totalXP: 0,
+  };
+  try {
+    const s = localStorage.getItem('patapura_state_v2');
+    if (s) {
+      const parsed = JSON.parse(s);
+      // Migrate: ensure today is reset if new day
+      const today = getTodayStr();
+      if (parsed.stats && parsed.stats.lastStudied !== today) {
+        parsed.today = { xp: 0, correct: 0, studied: 0 };
+      }
+      return { ...def, ...parsed };
+    }
+  } catch(e) {}
+  return def;
+}
+
+function saveState() { localStorage.setItem('patapura_state_v2', JSON.stringify(state)); }
+
+let state = loadState();
+
+function getTodayStr() {
+  const d = new Date();
+  return d.toISOString().slice(0, 10);
+}
+
+function getCardState(id) {
+  if (!state.cards[id]) {
+    state.cards[id] = { interval: 0, ef: 2.5, due: 0, reps: 0, lapses: 0, masteryLevel: 0 };
+  }
+  return state.cards[id];
+}
+
+function updateSRS(id, correct, responseTime) {
+  const card = getCardState(id);
+  const now = Date.now();
+  
+  if (correct) {
+    card.reps++;
+    if (card.reps === 1) {
+      card.interval = 1;
+      card.masteryLevel = Math.min(1, card.masteryLevel + 1);
+    } else if (card.reps === 2) {
+      card.interval = 3;
+      card.masteryLevel = Math.min(2, card.masteryLevel + 1);
+    } else {
+      card.interval = Math.round(card.interval * card.ef);
+      card.masteryLevel = Math.min(5, card.masteryLevel + 1);
+    }
+    // EF adjustment (faster = better)
+    const quality = responseTime < 5000 ? 5 : responseTime < 10000 ? 4 : 3;
+    card.ef = Math.max(1.3, card.ef + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)));
+  } else {
+    card.lapses++;
+    card.reps = 0;
+    card.interval = 1;
+    card.masteryLevel = Math.max(0, card.masteryLevel - 1);
+    card.ef = Math.max(1.3, card.ef - 0.2);
+  }
+  
+  card.due = now + card.interval * 24 * 60 * 60 * 1000;
+  state.cards[id] = card;
+}
+
+function getDueCards() {
+  const now = Date.now();
+  return VOCAB_DATA.filter(v => {
+    const c = state.cards[v.id];
+    return c && c.due > 0 && c.due <= now;
+  });
+}
+
+function getNewCards() {
+  return VOCAB_DATA.filter(v => {
+    const c = state.cards[v.id];
+    return !c || c.reps === 0;
+  });
+}
+
+// ============================================================
+// QUIZ LOGIC
+// ============================================================
+let currentSession = [];
+let currentIdx = 0;
+let sessionXP = 0;
+let sessionCorrect = 0;
+let sessionCombo = 0;
+let maxCombo = 0;
+let sessionStartTime = 0;
+let questionStartTime = 0;
+let responseTimes = [];
+let lastMode = 'mixed';
+
+const QUIZ_TYPES = ['meaning_jp_to_en', 'meaning_en_to_jp', 'fill_blank', 'choose_example'];
+
+function buildSession(mode) {
+  lastMode = mode;
+  let pool = [];
+  
+  if (mode === 'review') {
+    pool = getDueCards();
+    if (pool.length === 0) pool = getNewCards().slice(0, 10);
+  } else if (mode === 'new') {
+    pool = getNewCards().slice(0, 10);
+    if (pool.length === 0) pool = VOCAB_DATA.slice(0, 10);
+  } else if (mode === 'meaning') {
+    pool = [...VOCAB_DATA].sort(() => Math.random() - 0.5).slice(0, 10);
+  } else if (mode === 'listening') {
+    pool = [...VOCAB_DATA].sort(() => Math.random() - 0.5).slice(0, 10);
+  } else { // mixed
+    const due = getDueCards().slice(0, 5);
+    const newC = getNewCards().slice(0, 5);
+    pool = [...due, ...newC];
+    if (pool.length < 5) pool = [...VOCAB_DATA].sort(() => Math.random() - 0.5).slice(0, 10);
+  }
+  
+  if (pool.length === 0) pool = VOCAB_DATA.slice(0, 10);
+  
+  return pool.slice(0, 10).map(v => {
+    let type;
+    if (mode === 'meaning') type = 'meaning_jp_to_en';
+    else if (mode === 'listening') type = 'fill_blank';
+    else type = QUIZ_TYPES[Math.floor(Math.random() * QUIZ_TYPES.length)];
+    return { vocab: v, type, answered: false, correct: false, responseTime: 0 };
+  });
+}
+
+function startQuiz(mode) {
+  currentSession = buildSession(mode);
+  currentIdx = 0;
+  sessionXP = 0;
+  sessionCorrect = 0;
+  sessionCombo = 0;
+  maxCombo = 0;
+  responseTimes = [];
+  sessionStartTime = Date.now();
+  
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  if (currentIdx >= currentSession.length) {
+    finishSession();
+    return;
+  }
+  
+  const item = currentSession[currentIdx];
+  const { vocab, type } = item;
+  const card = getCardState(vocab.id);
+  questionStartTime = Date.now();
+  
+  // Progress
+  const pct = (currentIdx / currentSession.length) * 100;
+  document.getElementById('quiz-prog').style.width = pct + '%';
+  document.getElementById('quiz-count-label').textContent = `${currentIdx + 1} / ${currentSession.length}`;
+  document.getElementById('session-xp').textContent = `+${sessionXP} XP`;
+  
+  // Difficulty badge
+  const diffLabels = ['New', 'Learning', 'Review', 'Review', 'Mastered', 'Mastered'];
+  const diffClasses = ['diff-new', 'diff-learning', 'diff-review', 'diff-review', 'diff-mastered', 'diff-mastered'];
+  const diffIcons = ['✨', '📝', '🔄', '🔄', '⭐', '💎'];
+  const ml = card.masteryLevel || 0;
+  
+  // Build options (3 distractors + 1 correct)
+  const allOpts = VOCAB_DATA.filter(v => v.id !== vocab.id);
+  const distractors = allOpts.sort(() => Math.random() - 0.5).slice(0, 3);
+  
+  let questionHTML = '';
+  let options = [];
+  
+  if (type === 'meaning_jp_to_en') {
+    questionHTML = `<div class="quiz-type-label">日本語 → 英語表現</div>
+      <div class="quiz-question">${vocab.meaning}</div>
+      <div class="quiz-hint">ヒント: Lesson ${vocab.lesson} / ${vocab.category}</div>`;
+    options = [
+      { text: vocab.word, correct: true },
+      ...distractors.map(d => ({ text: d.word, correct: false }))
+    ];
+  } else if (type === 'meaning_en_to_jp') {
+    questionHTML = `<div class="quiz-type-label">英語表現 → 日本語</div>
+      <div class="quiz-question"><strong style="color:var(--accent);font-size:18px">"${vocab.word}"</strong><br><span style="font-size:13px;color:var(--text2);margin-top:8px;display:block">この表現の意味は？</span></div>`;
+    options = [
+      { text: vocab.meaning, correct: true },
+      ...distractors.map(d => ({ text: d.meaning, correct: false }))
+    ];
+  } else if (type === 'fill_blank') {
+    const ex = vocab.example.replace(new RegExp(vocab.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), '______');
+    questionHTML = `<div class="quiz-type-label">空欄補充</div>
+      <div class="quiz-question">${ex}</div>
+      <div class="quiz-hint">日本語訳: <span>${vocab.translation}</span></div>`;
+    options = [
+      { text: vocab.word, correct: true },
+      ...distractors.map(d => ({ text: d.word, correct: false }))
+    ];
+  } else { // choose_example
+    // 2パターンをランダムで出題
+    const subtype = Math.random() < 0.5 ? 'context' : 'translation';
+
+    if (subtype === 'translation') {
+      // 日本語訳を見て正しい英文を選ぶ（選択肢は全て同じ単語を含む文に見せかける）
+      questionHTML = `<div class="quiz-type-label">日本語訳 → 正しい英文</div>
+        <div class="quiz-question">次の日本語に対応する英文はどれですか？<br><span style="color:var(--accent);font-weight:700;font-size:15px;display:block;margin-top:10px">${vocab.translation}</span></div>`;
+      // 不正解は他の単語の例文（意味が紛らわしいものを優先）
+      options = [
+        { text: vocab.example, correct: true },
+        ...distractors.map(d => ({ text: d.example, correct: false }))
+      ];
+    } else {
+      // 文脈穴埋め：例文の該当表現を空欄にし、似た意味の選択肢と混ぜる
+      const blankExample = vocab.example.replace(
+        new RegExp(vocab.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+        '______'
+      );
+      questionHTML = `<div class="quiz-type-label">文脈判断・穴埋め</div>
+        <div class="quiz-question" style="font-size:15px">${blankExample}</div>
+        <div class="quiz-hint">※ ______ に入る最も適切な表現を選んでください</div>`;
+      // 選択肢：正解 + 意味が似た表現（distractorのwordを使用）
+      options = [
+        { text: vocab.word, correct: true },
+        ...distractors.map(d => ({ text: d.word, correct: false }))
+      ];
+    }
+  }
+  
+  // Shuffle options
+  options = options.sort(() => Math.random() - 0.5);
+  const letters = ['A', 'B', 'C', 'D'];
+  
+  document.getElementById('quiz-body').innerHTML = `
+    <div class="difficulty-badge ${diffClasses[ml]}">${diffIcons[ml]} ${diffLabels[ml]}</div>
+    <div class="quiz-card">${questionHTML}</div>
+    <div class="options-grid">
+      ${options.map((opt, i) => `
+        <button class="option-btn" data-correct="${opt.correct}" data-vocabid="${vocab.id}" onclick="selectOption(this)">
+          <span class="option-letter">${letters[i]}</span>${escapeHtml(opt.text)}
+        </button>
+      `).join('')}
+    </div>
+    <div class="feedback-panel" id="feedback-panel"></div>
+    <button class="next-btn" id="next-btn" style="display:none" onclick="nextQuestion()">次へ →</button>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function selectOption(btn) {
+  if (document.querySelector('.option-btn.correct, .option-btn.wrong')) return;
+  
+  const correct = btn.dataset.correct === 'true';
+  const vocabId = btn.dataset.vocabid;
+  const vocab = currentSession[currentIdx].vocab;
+  const word = vocab.word;
+  const meaning = vocab.meaning;
+  const example = vocab.example;
+
+  const responseTime = Date.now() - questionStartTime;
+  responseTimes.push(responseTime);
+  
+  // Mark buttons
+  const buttons = document.querySelectorAll('.option-btn');
+  buttons.forEach(b => b.style.pointerEvents = 'none');
+  
+  if (correct) {
+    btn.classList.add('correct');
+    sessionCorrect++;
+    sessionCombo++;
+    if (sessionCombo > maxCombo) maxCombo = sessionCombo;
+    
+    // XP calculation
+    const comboBonus = Math.min(sessionCombo - 1, 5);
+    const speedBonus = responseTime < 5000 ? 3 : responseTime < 8000 ? 2 : 1;
+    const xpGained = 2 + comboBonus + speedBonus;
+    sessionXP += xpGained;
+    document.getElementById('session-xp').textContent = `+${sessionXP} XP`;
+    
+    // Show XP float
+    showXPFloat(btn, `+${xpGained}`);
+    if (sessionCombo > 2) showXPFloat(btn, `🔥${sessionCombo}コンボ!`, 40);
+    
+  } else {
+    btn.classList.add('wrong');
+    sessionCombo = 0;
+    // Highlight correct button
+    buttons.forEach(b => {
+      if (b.dataset.correct === 'true') {
+        b.classList.add('correct');
+      }
+    });
+  }
+  
+  // Feedback
+  const panel = document.getElementById('feedback-panel');
+  const speakIcon = `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
+  panel.innerHTML = correct
+    ? `<div class="feedback-correct">✓ 正解！${sessionCombo > 2 ? ` ${sessionCombo}コンボ！` : ''}</div>
+       <div class="feedback-answer"><strong>${word}</strong></div>
+       <div class="feedback-meaning">${meaning}</div>
+       <div class="feedback-example">${example}</div>
+       <button class="speak-btn" id="speak-example-btn" onclick="speakText('${example.replace(/'/g, "\\'")}', this)" style="margin-top:10px">${speakIcon} 例文を聞く</button>`
+    : `<div class="feedback-wrong">✗ 不正解</div>
+       <div class="feedback-answer">正解: <strong>${word}</strong></div>
+       <div class="feedback-meaning">${meaning}</div>
+       <div class="feedback-example">${example}</div>
+       <button class="speak-btn" id="speak-example-btn" onclick="speakText('${example.replace(/'/g, "\\'")}', this)" style="margin-top:10px">${speakIcon} 例文を聞く</button>`;
+  panel.classList.add('show');
+
+  // Update SRS
+  updateSRS(vocabId, correct, responseTime);
+  
+  // Update today stats
+  state.today.studied++;
+  if (correct) state.today.correct++;
+  
+  document.getElementById('next-btn').style.display = 'block';
+  
+  // Update session item
+  currentSession[currentIdx].answered = true;
+  currentSession[currentIdx].correct = correct;
+  currentSession[currentIdx].responseTime = responseTime;
+}
+
+function showXPFloat(near, text, offsetY = 0) {
+  const el = document.createElement('div');
+  el.className = 'xp-float';
+  el.textContent = text;
+  const rect = near.getBoundingClientRect();
+  el.style.left = (rect.left + rect.width/2 - 30) + 'px';
+  el.style.top = (rect.top - 20 - offsetY) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+function speakText(text, btn) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'en-US';
+  utter.rate = 0.88;
+  utter.pitch = 1.0;
+
+  // 英語音声を優先して選択
+  const voices = window.speechSynthesis.getVoices();
+  const enVoice = voices.find(v => v.lang.startsWith('en') && v.localService) ||
+                  voices.find(v => v.lang.startsWith('en'));
+  if (enVoice) utter.voice = enVoice;
+
+  if (btn) {
+    btn.classList.add('speaking');
+    utter.onend = () => btn.classList.remove('speaking');
+    utter.onerror = () => btn.classList.remove('speaking');
+  }
+  window.speechSynthesis.speak(utter);
+}
+
+function nextQuestion() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  currentIdx++;
+  renderQuestion();
+}
+
+function finishSession() {
+  const accuracy = currentSession.length > 0 ? Math.round(sessionCorrect / currentSession.length * 100) : 0;
+  const avgTime = responseTimes.length > 0 ? Math.round(responseTimes.reduce((a,b) => a+b,0) / responseTimes.length / 1000) : 0;
+  
+  // Update state
+  const today = getTodayStr();
+  if (state.stats.lastStudied !== today) {
+    // Check streak
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+    if (state.stats.lastStudied === yesterday) {
+      state.stats.streak++;
+    } else if (state.stats.lastStudied !== today) {
+      state.stats.streak = 1;
+    }
+    state.stats.lastStudied = today;
+    if (!state.stats.dailyHistory) state.stats.dailyHistory = {};
+    state.stats.dailyHistory[today] = (state.stats.dailyHistory[today] || 0) + sessionXP;
+  } else {
+    if (!state.stats.dailyHistory) state.stats.dailyHistory = {};
+    state.stats.dailyHistory[today] = (state.stats.dailyHistory[today] || 0) + sessionXP;
+  }
+  
+  state.today.xp += sessionXP;
+  state.stats.totalXP = (state.stats.totalXP || 0) + sessionXP;
+  state.stats.totalCorrect = (state.stats.totalCorrect || 0) + sessionCorrect;
+  state.stats.totalAnswered = (state.stats.totalAnswered || 0) + currentSession.length;
+  if (state.stats.streak > (state.stats.bestStreak || 0)) state.stats.bestStreak = state.stats.streak;
+  
+  // Level up
+  const newLevel = Math.floor(state.stats.totalXP / 100) + 1;
+  const leveledUp = newLevel > (state.level || 1);
+  state.level = newLevel;
+  
+  saveState();
+  
+  // Check achievements
+  checkAchievements();
+
+  const titles = accuracy >= 90 ? '完璧！' : accuracy >= 70 ? '素晴らしい！' : accuracy >= 50 ? 'よく頑張りました！' : 'あきらめないで！';
+
+  document.getElementById('results-title').textContent = titles;
+  document.getElementById('results-sub').textContent = `正解率 ${accuracy}% · セッション完了`;
+  document.getElementById('result-score').textContent = accuracy + '%';
+  document.getElementById('result-correct').textContent = sessionCorrect;
+  document.getElementById('result-combo').textContent = maxCombo;
+  document.getElementById('result-time').textContent = avgTime + 's';
+  document.getElementById('result-xp').textContent = '+' + sessionXP + ' XP';
+
+  // Check daily goal
+  const dailyGoal = 20;
+  if (state.today.xp >= dailyGoal && (state.today.xp - sessionXP) < dailyGoal) {
+    setTimeout(() => showDailyComplete(), leveledUp ? 2800 : 2000);
+    if (leveledUp) setTimeout(() => showLevelUp(newLevel), 600);
+    return;
+  }
+
+  if (leveledUp) {
+    showScreen('results');
+    setTimeout(() => showLevelUp(newLevel), 800);
+  } else {
+    showScreen('results');
+  }
+}
+
+function showLevelUp(level) {
+  const overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML = `
+    <div class="levelup-card">
+      <div class="levelup-label">Level Up!</div>
+      <div class="levelup-ring">
+        <div class="levelup-num">${level}</div>
+      </div>
+      <div class="levelup-title">レベル ${level} 達成！</div>
+      <div class="levelup-sub">学習を続けてさらに上を目指しましょう</div>
+      <button class="btn-primary" style="margin-bottom:0" onclick="this.closest('.levelup-overlay').remove()">続ける</button>
+    </div>`;
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
+function showDailyComplete() {
+  document.getElementById('streak-reward-text').textContent = state.stats.streak + '日連続';
+  const mult = 1 + (state.stats.streak - 1) * 0.1;
+  document.getElementById('streak-reward').textContent = '×' + mult.toFixed(1);
+  document.getElementById('learned-reward').textContent = state.today.studied + '語';
+  document.getElementById('daily-xp-reward').textContent = '+' + state.today.xp + ' XP';
+  showScreen('daily-complete');
+}
+
+// ============================================================
+// ACHIEVEMENTS
+// ============================================================
+const ACHIEVEMENTS_DEF = [
+  { id:'first_lesson', icon:'🌱', name:'はじめの一歩', desc:'最初のセッションを完了', check: s => s.stats.totalAnswered >= 10 },
+  { id:'streak_3', icon:'🔥', name:'3日連続', desc:'3日連続で学習', check: s => s.stats.streak >= 3 },
+  { id:'streak_7', icon:'🌟', name:'一週間継続', desc:'7日連続で学習', check: s => s.stats.streak >= 7 },
+  { id:'streak_30', icon:'💎', name:'一ヶ月の壁', desc:'30日連続で学習', check: s => s.stats.streak >= 30 },
+  { id:'perfect_10', icon:'💯', name:'パーフェクト！', desc:'10問全問正解', check: s => s.stats.totalCorrect >= 10 },
+  { id:'xp_100', icon:'⚡', name:'XP100突破', desc:'累計100XPを獲得', check: s => s.stats.totalXP >= 100 },
+  { id:'xp_500', icon:'🏅', name:'XP500達成', desc:'累計500XPを獲得', check: s => s.stats.totalXP >= 500 },
+  { id:'vocab_50', icon:'📚', name:'50語習得', desc:'50語を学習', check: s => Object.keys(s.cards).length >= 50 },
+  { id:'vocab_all', icon:'🎓', name:'全語マスター', desc:'全160語を学習', check: s => Object.keys(s.cards).length >= 160 },
+  { id:'combo_5', icon:'🔗', name:'5コンボ達成', desc:'5問連続正解', check: s => s.stats.totalCorrect >= 5 },
+];
+
+function checkAchievements() {
+  ACHIEVEMENTS_DEF.forEach(ach => {
+    if (!state.achievements[ach.id] && ach.check(state)) {
+      state.achievements[ach.id] = true;
+      setTimeout(() => showAchievement(ach), 1000);
+    }
+  });
+  saveState();
+}
+
+function showAchievement(ach) {
+  const popup = document.getElementById('achievement-popup');
+  const unlockedCount = Object.keys(state.achievements).length;
+  document.getElementById('ach-badge-num').textContent = unlockedCount;
+  document.getElementById('ach-name').textContent = ach.name;
+  document.getElementById('ach-desc').textContent = ach.desc;
+  popup.classList.add('show');
+  setTimeout(() => popup.classList.remove('show'), 4000);
+}
+
+// ============================================================
+// CONFETTI
+// ============================================================
+
+
+// ============================================================
+// SCREENS
+// ============================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(name + '-screen').classList.add('active');
+  
+  if (name === 'home') {
+    updateHomeScreen();
+    setActiveNav('home');
+  } else if (name === 'vocab') {
+    renderVocabList();
+    setActiveNav('vocab');
+  }
+}
+
+function setActiveNav(name) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('nav-' + name);
+  if (el) el.classList.add('active');
+}
+
+function updateHomeScreen() {
+  const today = getTodayStr();
+  if (state.stats.lastStudied !== today) {
+    state.today = { xp: 0, correct: 0, studied: 0 };
+    saveState();
+  }
+  
+  // Streak
+  document.getElementById('streak-num').textContent = state.stats.streak || 0;
+  document.getElementById('level-display').textContent = 'Lv.' + (state.level || 1);
+  
+  // Daily XP
+  const dailyGoal = 20;
+  const todayXP = state.today.xp || 0;
+  const pct = Math.min(100, (todayXP / dailyGoal) * 100);
+  const bar = document.getElementById('daily-xp-bar');
+  const wrap = bar ? bar.parentElement : null;
+  bar.style.width = pct + '%';
+  document.getElementById('daily-badge').textContent = `${todayXP} / ${dailyGoal} XP`;
+  document.getElementById('xp-earned').textContent = todayXP + ' XP';
+
+  // XPバー演出
+  if (wrap && todayXP > 0) {
+    wrap.classList.remove('burst');
+    void wrap.offsetWidth; // reflow
+    wrap.classList.add('burst');
+    if (todayXP >= dailyGoal) bar.classList.add('goal-reached');
+    else bar.classList.remove('goal-reached');
+  }
+  
+  document.getElementById('stat-correct').textContent = state.today.correct || 0;
+  document.getElementById('stat-studied').textContent = state.today.studied || 0;
+  
+  const dueCount = getDueCards().length;
+  document.getElementById('stat-due').textContent = dueCount;
+  document.getElementById('due-count').textContent = dueCount;
+  
+  if (dueCount > 0) {
+    document.getElementById('review-due-banner').style.display = 'flex';
+  } else {
+    document.getElementById('review-due-banner').style.display = 'none';
+  }
+  
+  const newCount = getNewCards().length;
+  document.getElementById('new-count').textContent = `未学習 ${newCount}語`;
+  document.getElementById('mix-count').textContent = `復習${dueCount} + 新規${Math.min(5,newCount)}`;
+}
+
+// ============================================================
+// VOCAB LIST
+// ============================================================
+function getMasteryColor(ml) {
+  const colors = ['rgba(46,158,79,0.15)', '#f97316', '#ff6b6b', '#2e9e4f', '#5abf6e', '#d4a017'];
+  return colors[ml] || colors[0];
+}
+
+function renderVocabList(filter = '') {
+  const list = document.getElementById('vocab-list-container');
+  const filtered = VOCAB_DATA.filter(v => 
+    !filter || v.word.toLowerCase().includes(filter.toLowerCase()) || v.meaning.includes(filter)
+  );
+  
+  document.getElementById('vocab-total-badge').textContent = filtered.length + '語';
+  
+  list.innerHTML = filtered.map(v => {
+    const card = state.cards[v.id] || { masteryLevel: 0, reps: 0 };
+    const ml = card.masteryLevel || 0;
+    const labels = ['未', '初', '中', '定', '達', '完'];
+    const dueIn = card.due ? Math.max(0, Math.ceil((card.due - Date.now()) / 86400000)) : 0;
+    return `<div class="vocab-item" onclick="showVocabDetail('${v.id}')">
+      <div class="vocab-mastery" style="background:${getMasteryColor(ml)}"></div>
+      <div class="vocab-content">
+        <div class="vocab-word">${v.word}</div>
+        <div class="vocab-meaning">${v.meaning}</div>
+      </div>
+      <div class="vocab-srs">
+        <div style="font-size:12px;color:${getMasteryColor(ml)};font-weight:700">${labels[ml]}</div>
+        <div>${card.reps > 0 ? (dueIn === 0 ? '今日' : dueIn + '日後') : '未'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterVocab() {
+  const val = document.getElementById('vocab-search-input').value;
+  renderVocabList(val);
+}
+
+function showVocabDetail(id) {
+  const v = VOCAB_DATA.find(x => x.id === id);
+  if (!v) return;
+  const card = state.cards[v.id] || { masteryLevel: 0, reps: 0, lapses: 0, ef: 2.5 };
+  const speakSVG = `<svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>`;
+
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:flex-end;padding:20px;box-sizing:border-box`;
+  overlay.innerHTML = `
+    <div style="background:#ffffff;border:1px solid rgba(46,158,79,0.3);border-radius:24px;padding:24px;width:100%;max-width:440px;margin:0 auto">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">Lesson ${v.lesson}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="font-size:22px;font-weight:800;color:var(--accent)">${v.word}</div>
+        <button class="speak-btn" onclick="speakText('${v.word.replace(/'/g,"\\'")}', this)">${speakSVG} 読む</button>
+      </div>
+      <div style="font-size:15px;margin-bottom:16px">${v.meaning}</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;border-left:3px solid var(--accent);padding-left:12px;margin-bottom:6px">${v.example}</div>
+      <button class="speak-btn" onclick="speakText('${v.example.replace(/'/g,"\\'")}', this)" style="margin-bottom:12px">${speakSVG} 例文を聞く</button>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:20px">${v.translation}</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <div style="flex:1;background:rgba(46,158,79,0.06);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--green)">${card.reps}</div>
+          <div style="font-size:10px;color:var(--text2)">学習回数</div>
+        </div>
+        <div style="flex:1;background:rgba(46,158,79,0.06);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--accent2)">${card.lapses || 0}</div>
+          <div style="font-size:10px;color:var(--text2)">ミス回数</div>
+        </div>
+        <div style="flex:1;background:rgba(46,158,79,0.06);border-radius:12px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:800;color:var(--gold)">${card.masteryLevel || 0}</div>
+          <div style="font-size:10px;color:var(--text2)">熟達度</div>
+        </div>
+      </div>
+      <button onclick="this.closest('div[style]').remove()" style="width:100%;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:15px;cursor:pointer;font-family:inherit">閉じる</button>
+    </div>`;
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
+// ============================================================
+// STATS
+// ============================================================
+function renderStats() {
+  // Heatmap
+  const grid = document.getElementById('heatmap-grid');
+  grid.innerHTML = '';
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0,10);
+    const xp = (state.stats.dailyHistory || {})[d] || 0;
+    const level = xp === 0 ? 0 : xp < 10 ? 1 : xp < 20 ? 2 : xp < 40 ? 3 : 4;
+    const cell = document.createElement('div');
+    cell.className = 'heat-cell heat-' + level;
+    cell.title = d + ': ' + xp + 'XP';
+    grid.appendChild(cell);
+  }
+  
+  // Big stats
+  document.getElementById('total-xp-stat').textContent = state.stats.totalXP || 0;
+  document.getElementById('best-streak-stat').textContent = state.stats.bestStreak || 0;
+  
+  const masteredCount = Object.values(state.cards).filter(c => c.masteryLevel >= 4).length;
+  document.getElementById('mastered-stat').textContent = masteredCount;
+  
+  const totalA = state.stats.totalAnswered || 0;
+  const totalC = state.stats.totalCorrect || 0;
+  document.getElementById('accuracy-stat').textContent = totalA > 0 ? Math.round(totalC/totalA*100) + '%' : '0%';
+  
+  // Mastery chart
+  const chart = document.getElementById('mastery-chart');
+  const levels = [0,0,0,0];
+  VOCAB_DATA.forEach(v => {
+    const c = state.cards[v.id];
+    if (!c || c.reps === 0) levels[0]++;
+    else if (c.masteryLevel <= 1) levels[1]++;
+    else if (c.masteryLevel <= 3) levels[2]++;
+    else levels[3]++;
+  });
+  const maxL = Math.max(...levels, 1);
+  const barColors = ['rgba(46,158,79,0.1)', '#f97316', '#2e9e4f', '#5abf6e'];
+  chart.innerHTML = levels.map((n, i) => `
+    <div class="mastery-bar-wrap">
+      <div class="mastery-bar-num" style="color:${barColors[i]}">${n}</div>
+      <div class="mastery-bar" style="height:${Math.max(4, n/maxL*70)}px;background:${barColors[i]}"></div>
+    </div>
+  `).join('');
+  
+  // Achievements
+  const achGrid = document.getElementById('achievements-grid');
+  achGrid.innerHTML = ACHIEVEMENTS_DEF.map(ach => {
+    const unlocked = !!state.achievements[ach.id];
+    return `<div style="background:var(--surface);border:1px solid ${unlocked ? 'rgba(46,158,79,0.35)' : 'rgba(255,255,255,0.06)'};border-radius:14px;padding:14px;text-align:center;opacity:${unlocked ? 1 : 0.4}">
+      <div style="font-size:28px;margin-bottom:6px">${ach.icon}</div>
+      <div style="font-size:12px;font-weight:700">${ach.name}</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:3px">${ach.desc}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+// SETTINGS
+// ============================================================
+function showSettingsMenu() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;display:flex;align-items:flex-end;padding:20px;box-sizing:border-box`;
+  overlay.innerHTML = `
+    <div style="background:#ffffff;border:1px solid rgba(46,158,79,0.3);border-radius:24px;padding:24px;width:100%;max-width:440px;margin:0 auto">
+      <div style="font-size:18px;font-weight:800;margin-bottom:20px">設定</div>
+
+      <div style="margin-bottom:12px;padding:14px;background:rgba(46,158,79,0.05);border:1px solid rgba(46,158,79,0.15);border-radius:12px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;font-weight:600">データをリセット</div>
+          <div style="font-size:11px;color:var(--text2)">全学習データを削除</div>
+        </div>
+        <button onclick="if(confirm('本当にリセットしますか？'))resetData()" style="background:rgba(252,92,125,0.15);border:1px solid rgba(252,92,125,0.4);color:#e05a6a;padding:8px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px">リセット</button>
+      </div>
+
+      <div style="margin-bottom:20px;padding:14px;background:rgba(46,158,79,0.05);border:1px solid rgba(46,158,79,0.15);border-radius:12px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:8px">学習データ</div>
+        <div style="font-size:12px;color:var(--text2)">総単語数: ${VOCAB_DATA.length}語<br>学習済み: ${Object.keys(state.cards).filter(k => state.cards[k].reps > 0).length}語<br>バージョン: 2.0.0</div>
+      </div>
+      <button onclick="this.closest('div[style]').remove()" style="width:100%;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;color:var(--text);font-size:15px;cursor:pointer;font-family:inherit">閉じる</button>
+    </div>`;
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  document.body.appendChild(overlay);
+}
+
+function resetData() {
+  localStorage.removeItem('patapura_state_v2');
+  state = loadState();
+  document.querySelectorAll('div[style*="position:fixed"]').forEach(e => e.remove());
+  updateHomeScreen();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+window.onload = () => {
+  // Update streak on load
+  const today = getTodayStr();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0,10);
+  if (state.stats.lastStudied && state.stats.lastStudied !== today && state.stats.lastStudied !== yesterday) {
+    state.stats.streak = 0;
+    saveState();
+  }
+  updateHomeScreen();
+};
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
